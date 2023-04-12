@@ -10,7 +10,8 @@ import android.net.wifi.ScanResult
 import android.net.wifi.WifiManager
 import androidx.core.app.ActivityCompat
 import com.example.wavemap.db.WaveDatabase
-import com.example.wavemap.db.WiFiMeasure
+import com.example.wavemap.db.MeasureTable
+import com.example.wavemap.db.MeasureType
 import com.example.wavemap.exceptions.MeasureException
 import com.google.android.gms.maps.model.LatLng
 import kotlin.coroutines.resume
@@ -51,7 +52,7 @@ class WiFiSampler : WaveSampler {
                     val wifi_level = wifi_data?.level?.toDouble() ?: 0.0
 
                     context.unregisterReceiver(this)
-                    cont.resume( WiFiMeasure(0, wifi_level, 1L, 1.0, 1.0) )
+                    cont.resume( MeasureTable(0, MeasureType.WIFI, wifi_level, 1L, 1.0, 1.0) )
                 }
             }
         }
@@ -74,14 +75,14 @@ class WiFiSampler : WaveSampler {
     }
 
     override suspend fun store(measure: WaveMeasure) : Unit {
-        db.wifiDao().insert( WiFiMeasure(0, measure.value, measure.timestamp, measure.latitude, measure.longitude) )
+        db.measureDAO().insert( MeasureTable(0, MeasureType.WIFI, measure.value, measure.timestamp, measure.latitude, measure.longitude) )
     }
 
     override suspend fun retrieve(top_left_corner: LatLng, bottom_right_corner: LatLng, limit: Int?) : List<WaveMeasure> {
-        val db_measures : List<WiFiMeasure> = if (limit != null) {
-            db.wifiDao().get(top_left_corner.latitude, top_left_corner.longitude, bottom_right_corner.latitude, bottom_right_corner.longitude, limit)
+        val db_measures : List<MeasureTable> = if (limit != null) {
+            db.measureDAO().get(MeasureType.WIFI, top_left_corner.latitude, top_left_corner.longitude, bottom_right_corner.latitude, bottom_right_corner.longitude, limit)
         } else {
-            db.wifiDao().get(top_left_corner.latitude, top_left_corner.longitude, bottom_right_corner.latitude, bottom_right_corner.longitude)
+            db.measureDAO().get(MeasureType.WIFI, top_left_corner.latitude, top_left_corner.longitude, bottom_right_corner.latitude, bottom_right_corner.longitude)
         }
 
         return db_measures
