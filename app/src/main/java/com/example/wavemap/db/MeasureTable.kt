@@ -19,17 +19,45 @@ data class MeasureTable (
 
 @Dao
 interface MeasureDAO {
-    @Query("SELECT * FROM measures " +
-            "WHERE type = :type AND " +
-            "      :top_left_lat <= latitude AND latitude <= :bot_right_lat AND " +
-            "      :bot_right_lon <= longitude AND longitude <= :top_left_lon")
+    @Query(
+        "SELECT * FROM measures " +
+        "WHERE type = :type AND " +
+        "      (longitude BETWEEN :bot_right_lon AND :top_left_lon) AND " +
+        "      ( " +
+        "         ( " +
+        "            ( (:top_left_lat >= 0 AND :bot_right_lat >= 0) OR (:top_left_lat < 0 AND :bot_right_lat < 0) OR (:top_left_lat < 0 AND :bot_right_lat >= 0) ) AND " +
+        "            (latitude BETWEEN :top_left_lat AND :bot_right_lat) " +
+        "         ) OR " +
+        "         (" + // Latitude at wrap-up point (somewhere in the Pacific Ocean)
+        "            :top_left_lat > 0 AND :bot_right_lat < 0 AND " +
+        "            ( " +
+        "               (latitude BETWEEN :top_left_lat AND 180) OR " +
+        "               (latitude BETWEEN -180 AND :bot_right_lat) " +
+        "             ) " +
+        "          ) " +
+        "      )"
+    )
     fun get(type: MeasureType, top_left_lat: Double, top_left_lon: Double, bot_right_lat: Double, bot_right_lon: Double) : List<MeasureTable>
 
-    @Query("SELECT * FROM measures " +
-            "WHERE type = :type AND " +
-            "      :top_left_lat <= latitude AND latitude <= :bot_right_lat AND" +
-            "      :bot_right_lon <= longitude AND longitude <= :top_left_lon " +
-            "LIMIT :limit")
+    @Query(
+        "SELECT * FROM measures " +
+        "WHERE type = :type AND " +
+        "      (longitude BETWEEN :bot_right_lon AND :top_left_lon) AND " +
+        "      ( " +
+        "         ( " +
+        "            ( (:top_left_lat >= 0 AND :bot_right_lat >= 0) OR (:top_left_lat < 0 AND :bot_right_lat < 0) OR (:top_left_lat < 0 AND :bot_right_lat >= 0) ) AND " +
+        "            (latitude BETWEEN :top_left_lat AND :bot_right_lat) " +
+        "         ) OR " +
+        "         (" + // Latitude at wrap-up point (somewhere in the Pacific Ocean)
+        "            :top_left_lat > 0 AND :bot_right_lat < 0 AND " +
+        "            ( " +
+        "               (latitude BETWEEN :top_left_lat AND 180) OR " +
+        "               (latitude BETWEEN -180 AND :bot_right_lat) " +
+        "             ) " +
+        "          ) " +
+        "      ) " +
+        "LIMIT :limit"
+    )
     fun get(type: MeasureType, top_left_lat: Double, top_left_lon: Double, bot_right_lat: Double, bot_right_lon: Double, limit: Int) : List<MeasureTable>
 
     @Insert
