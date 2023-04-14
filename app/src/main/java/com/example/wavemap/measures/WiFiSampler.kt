@@ -8,7 +8,7 @@ import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.net.wifi.ScanResult
 import android.net.wifi.WifiManager
-import androidx.core.app.ActivityCompat
+import androidx.core.content.ContextCompat
 import com.example.wavemap.db.WaveDatabase
 import com.example.wavemap.db.MeasureTable
 import com.example.wavemap.db.MeasureType
@@ -37,16 +37,10 @@ class WiFiSampler : WaveSampler {
                 val success = intent.getBooleanExtra(WifiManager.EXTRA_RESULTS_UPDATED, false)
 
                 if (success) {
-                    if ( ActivityCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ) {
-                        // TODO: Consider calling
-                        //    ActivityCompat#requestPermissions
-                        // here to request the missing permissions, and then overriding
-                        //   public void onRequestPermissionsResult(int requestCode, String[] permissions,
-                        //                                          int[] grantResults)
-                        // to handle the case where the user grants the permission. See the documentation
-                        // for ActivityCompat#requestPermissions for more details.
-                        return
+                    if ( ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ) {
+                        return cont.resumeWithException( SecurityException("Missing ACCESS_FINE_LOCATION permissions") )
                     }
+
                     val results = wifiManager.scanResults
                     var wifi_data : ScanResult? = if (bssid == null) results.maxByOrNull{ it.level } else results.firstOrNull{ it.BSSID == bssid }
                     val wifi_level = wifi_data?.level?.toDouble() ?: 0.0
