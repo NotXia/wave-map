@@ -13,7 +13,10 @@ import com.example.wavemap.db.WaveDatabase
 import com.example.wavemap.db.MeasureTable
 import com.example.wavemap.db.MeasureType
 import com.example.wavemap.exceptions.MeasureException
+import com.example.wavemap.utilities.LocationUtils
 import com.google.android.gms.maps.model.LatLng
+import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.launch
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
@@ -29,24 +32,26 @@ class WiFiSampler : WaveSampler {
         this.db = db
     }
 
-    override suspend fun sample(): WaveMeasure = suspendCoroutine { cont ->
+    override suspend fun sample() : WaveMeasure = suspendCoroutine { cont ->
         val wifiManager = context.getSystemService(Context.WIFI_SERVICE) as WifiManager
 
         val wifiScanReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
                 val success = intent.getBooleanExtra(WifiManager.EXTRA_RESULTS_UPDATED, false)
+                if (!success) { return }
+                context.unregisterReceiver(this)
 
-                if (success) {
+                GlobalScope.launch {
                     if ( ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ) {
-                        return cont.resumeWithException( SecurityException("Missing ACCESS_FINE_LOCATION permissions") )
+                        return@launch cont.resumeWithException( SecurityException("Missing ACCESS_FINE_LOCATION permissions") )
                     }
 
+                    val current_location: LatLng = LocationUtils.getCurrent(context)
                     val results = wifiManager.scanResults
                     var wifi_data : ScanResult? = if (bssid == null) results.maxByOrNull{ it.level } else results.firstOrNull{ it.BSSID == bssid }
                     val wifi_level = wifi_data?.level?.toDouble() ?: 0.0
 
-                    context.unregisterReceiver(this)
-                    cont.resume( MeasureTable(0, MeasureType.WIFI, wifi_level, 1L, 1.0, 1.0) )
+                    cont.resume( MeasureTable(0, MeasureType.WIFI, wifi_level, 1L, current_location.latitude, current_location.longitude) )
                 }
             }
         }
