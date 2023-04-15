@@ -22,17 +22,17 @@ interface MeasureDAO {
     @Query(
         "SELECT * FROM measures " +
         "WHERE type = :type AND " +
-        "      (longitude BETWEEN :bot_right_lon AND :top_left_lon) AND " +
+        "      (latitude BETWEEN :bot_right_lat AND :top_left_lat) AND " +
         "      ( " +
         "         ( " +
-        "            ( (:top_left_lat >= 0 AND :bot_right_lat >= 0) OR (:top_left_lat < 0 AND :bot_right_lat < 0) OR (:top_left_lat < 0 AND :bot_right_lat >= 0) ) AND " +
-        "            (latitude BETWEEN :top_left_lat AND :bot_right_lat) " +
+        "            ( (:top_left_lon >= 0 AND :bot_right_lon >= 0) OR (:top_left_lon < 0 AND :bot_right_lon < 0) OR (:top_left_lon < 0 AND :bot_right_lon >= 0) ) AND " +
+        "            (longitude BETWEEN :top_left_lon AND :bot_right_lon) " +
         "         ) OR " +
-        "         (" + // Latitude at wrap-up point (somewhere in the Pacific Ocean)
-        "            :top_left_lat > 0 AND :bot_right_lat < 0 AND " +
+        "         (" + // Longitude at wrap-up point (somewhere in the Pacific Ocean)
+        "            :top_left_lon > 0 AND :bot_right_lon < 0 AND " +
         "            ( " +
-        "               (latitude BETWEEN :top_left_lat AND 180) OR " +
-        "               (latitude BETWEEN -180 AND :bot_right_lat) " +
+        "               (longitude BETWEEN :top_left_lon AND 180) OR " +
+        "               (longitude BETWEEN -180 AND :bot_right_lon) " +
         "             ) " +
         "          ) " +
         "      )"
@@ -42,17 +42,17 @@ interface MeasureDAO {
     @Query(
         "SELECT * FROM measures " +
         "WHERE type = :type AND " +
-        "      (longitude BETWEEN :bot_right_lon AND :top_left_lon) AND " +
+        "      (latitude BETWEEN :bot_right_lat AND :top_left_lat) AND " +
         "      ( " +
         "         ( " +
-        "            ( (:top_left_lat >= 0 AND :bot_right_lat >= 0) OR (:top_left_lat < 0 AND :bot_right_lat < 0) OR (:top_left_lat < 0 AND :bot_right_lat >= 0) ) AND " +
-        "            (latitude BETWEEN :top_left_lat AND :bot_right_lat) " +
+        "            ( (:top_left_lon >= 0 AND :bot_right_lon >= 0) OR (:top_left_lon < 0 AND :bot_right_lon < 0) OR (:top_left_lon < 0 AND :bot_right_lon >= 0) ) AND " +
+        "            (longitude BETWEEN :top_left_lon AND :bot_right_lon) " +
         "         ) OR " +
-        "         (" + // Latitude at wrap-up point (somewhere in the Pacific Ocean)
-        "            :top_left_lat > 0 AND :bot_right_lat < 0 AND " +
+        "         (" + // Longitude at wrap-up point (somewhere in the Pacific Ocean)
+        "            :top_left_lon > 0 AND :bot_right_lon < 0 AND " +
         "            ( " +
-        "               (latitude BETWEEN :top_left_lat AND 180) OR " +
-        "               (latitude BETWEEN -180 AND :bot_right_lat) " +
+        "               (longitude BETWEEN :top_left_lon AND 180) OR " +
+        "               (longitude BETWEEN -180 AND :bot_right_lon) " +
         "             ) " +
         "          ) " +
         "      ) " +
