@@ -32,7 +32,7 @@ class WiFiSampler : WaveSampler {
         this.db = db
     }
 
-    override suspend fun sample() : WaveMeasure = suspendCoroutine { cont ->
+    override suspend fun sample() : List<WaveMeasure> = suspendCoroutine { cont ->
         val wifiManager = context.getSystemService(Context.WIFI_SERVICE) as WifiManager
 
         val wifiScanReceiver = object : BroadcastReceiver() {
@@ -48,10 +48,15 @@ class WiFiSampler : WaveSampler {
 
                     val current_location: LatLng = LocationUtils.getCurrent(context)
                     val results = wifiManager.scanResults
-                    var wifi_data : ScanResult? = if (bssid == null) results.maxByOrNull{ it.level } else results.firstOrNull{ it.BSSID == bssid }
-                    val wifi_level = wifi_data?.level?.toDouble() ?: 0.0
+                    var wifi_list = mutableListOf<MeasureTable>()
+                    val timestamp = System.currentTimeMillis()
 
-                    cont.resume( MeasureTable(0, MeasureType.WIFI, wifi_level, 1L, current_location.latitude, current_location.longitude) )
+                    for (wifi in results) {
+                        wifi_list.add( MeasureTable(0, MeasureType.WIFI, wifi.level.toDouble(), timestamp, current_location.latitude, current_location.longitude, wifi.BSSID) )
+                    }
+
+                    cont.resume( wifi_list )
+
                 }
             }
         }
@@ -73,17 +78,29 @@ class WiFiSampler : WaveSampler {
         }
     }
 
-    override suspend fun store(measure: WaveMeasure) : Unit {
-        db.measureDAO().insert( MeasureTable(0, MeasureType.WIFI, measure.value, measure.timestamp, measure.latitude, measure.longitude) )
+    override suspend fun store(measures: List<WaveMeasure>) : Unit {
+        for (measure in measures) {
+            db.measureDAO().insert( MeasureTable(0, MeasureType.WIFI, measure.value, measure.timestamp, measure.latitude, measure.longitude, measure.info) )
+        }
     }
 
     override suspend fun retrieve(top_left_corner: LatLng, bottom_right_corner: LatLng, limit: Int?) : List<WaveMeasure> {
-        val db_measures : List<MeasureTable> = if (limit != null) {
-            db.measureDAO().get(MeasureType.WIFI, top_left_corner.latitude, top_left_corner.longitude, bottom_right_corner.latitude, bottom_right_corner.longitude, limit)
-        } else {
-            db.measureDAO().get(MeasureType.WIFI, top_left_corner.latitude, top_left_corner.longitude, bottom_right_corner.latitude, bottom_right_corner.longitude)
+        var measures : List<WaveMeasure>
+
+        if (bssid == null) {
+            measures = db.measureDAO().get(
+                MeasureType.WIFI,
+                top_left_corner.latitude, top_left_corner.longitude, bottom_right_corner.latitude, bottom_right_corner.longitude,
+                limit ?: -1
+            )
+        }
+        else {
+            measures = db.measureDAO().get(MeasureType.WIFI, top_left_corner.latitude, top_left_corner.longitude, bottom_right_corner.latitude, bottom_right_corner.longitude, -1)
+            measures = measures.filter { m -> m.info == bssid }
+
+            if (limit != null) { measures = measures.subList(0, limit) }
         }
 
-        return db_measures
+        return measures
     }
 }
