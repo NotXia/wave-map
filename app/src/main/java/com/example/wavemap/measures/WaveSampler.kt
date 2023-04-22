@@ -27,9 +27,15 @@ abstract class WaveSampler {
      * @param bottom_right_corner       Coordinates of the bottom-right corner of the square
      * @param limit                     Number of past measurements to consider (all by default)
      * */
-    suspend fun average(top_left_corner: LatLng, bottom_right_corner: LatLng, limit: Int?=null) : Double {
+    suspend fun average(top_left_corner: LatLng, bottom_right_corner: LatLng, limit: Int?=null) : Double? {
         val measurers = retrieve(top_left_corner, bottom_right_corner, limit)
-        return measurers.map { m -> m.value }.average()
+
+        if (measurers.isEmpty()) {
+            return null
+        }
+        else {
+            return measurers.map { m -> m.value }.average()
+        }
     }
 
     suspend fun sampleAndStore() : List<WaveMeasure> {
