@@ -6,7 +6,6 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
-import android.net.wifi.ScanResult
 import android.net.wifi.WifiManager
 import androidx.core.content.ContextCompat
 import com.example.wavemap.db.WaveDatabase
@@ -17,6 +16,7 @@ import com.example.wavemap.utilities.LocationUtils
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
+import java.lang.Integer.min
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
@@ -85,20 +85,23 @@ class WiFiSampler : WaveSampler {
     }
 
     override suspend fun retrieve(top_left_corner: LatLng, bottom_right_corner: LatLng, limit: Int?) : List<WaveMeasure> {
-        var measures : List<WaveMeasure>
+        var measures : List<WaveMeasure> =
+            db.measureDAO().get(MeasureType.WIFI, top_left_corner.latitude, top_left_corner.longitude, bottom_right_corner.latitude, bottom_right_corner.longitude, -1)
 
         if (bssid == null) {
-            measures = db.measureDAO().get(
-                MeasureType.WIFI,
-                top_left_corner.latitude, top_left_corner.longitude, bottom_right_corner.latitude, bottom_right_corner.longitude,
-                limit ?: -1
-            )
+            val measures_by_timestamp = measures.groupBy { it.timestamp }
+            val timestamps = measures_by_timestamp.keys.toList().sortedDescending()
+            measures = mutableListOf()
+
+            // Gets the highest measure for each timestamp (up to limit)
+            for (i in 0 until min(limit ?: timestamps.size, timestamps.size)) {
+                measures.add( measures_by_timestamp[timestamps[i]]!!.maxBy{ it.value } )
+            }
         }
         else {
-            measures = db.measureDAO().get(MeasureType.WIFI, top_left_corner.latitude, top_left_corner.longitude, bottom_right_corner.latitude, bottom_right_corner.longitude, -1)
             measures = measures.filter { m -> m.info == bssid }
 
-            if (limit != null) { measures = measures.subList(0, limit) }
+            if (limit != null) { measures = measures.subList(0, min(limit, measures.size)) }
         }
 
         return measures
