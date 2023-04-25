@@ -5,12 +5,20 @@ import android.app.Activity
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.activity.result.contract.ActivityResultContracts
+import androidx.activity.viewModels
 import androidx.core.content.ContextCompat
+import androidx.core.graphics.ColorUtils
 import androidx.fragment.app.Fragment
+import androidx.fragment.app.activityViewModels
+import androidx.fragment.app.viewModels
+import androidx.lifecycle.Observer
+import androidx.lifecycle.ViewModelProvider
+import androidx.lifecycle.lifecycleScope
 import com.example.wavemap.utilities.LocationUtils
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -22,6 +30,8 @@ import kotlin.math.*
 
 
 class WaveHeatMapFragment : Fragment() {
+
+    private val view_model : MeasureViewModel by activityViewModels()
 
     private lateinit var google_map : GoogleMap
 
@@ -40,7 +50,8 @@ class WaveHeatMapFragment : Fragment() {
         mapFragment?.getMapAsync { google_map ->
             this.google_map = google_map
 
-            if (ContextCompat.checkSelfPermission(activity as Activity, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
+            // TODO permission dialog does not work here
+            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
                 registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
                     if (isGranted) {
                         initMap()
@@ -54,8 +65,9 @@ class WaveHeatMapFragment : Fragment() {
         }
     }
 
+
     private fun initMap() {
-        if ( ContextCompat.checkSelfPermission(activity as Activity, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ) {
+        if ( ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ) {
             throw SecurityException("Missing ACCESS_FINE_LOCATION permission")
         }
 
@@ -84,16 +96,21 @@ class WaveHeatMapFragment : Fragment() {
                     updateTilesLength()
                     fillWithTiles()
                 }
+
+                view_model.last_measure.observe(viewLifecycleOwner, Observer<Long> { _ ->
+                    google_map.clear()
+                    fillWithTiles()
+                })
             }
         }
     }
 
     private fun initLocationRetriever() {
-        if ( ContextCompat.checkSelfPermission(activity as Activity, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ) {
+        if ( ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ) {
             throw SecurityException("Missing ACCESS_FINE_LOCATION permission")
         }
 
-        LocationServices.getFusedLocationProviderClient(activity as Activity).requestLocationUpdates(
+        LocationServices.getFusedLocationProviderClient(requireActivity()).requestLocationUpdates(
             LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 200).apply {
                 setGranularity(Granularity.GRANULARITY_PERMISSION_LEVEL)
                 setWaitForAccurateLocation(true)
@@ -118,18 +135,37 @@ class WaveHeatMapFragment : Fragment() {
         return meters * degrees_per_1_meter
     }
 
+    private fun scaleToRange(value: Double, source_range: Pair<Double, Double>, target_range: Pair<Double, Double>) : Double {
+        if (value <= source_range.first) { return target_range.first }
+        if (value >= source_range.second) { return target_range.second }
+
+        val source_distance = (source_range.second - source_range.first)
+        val target_distance = (target_range.second - target_range.first)
+        return ( ((value - source_range.first) * target_distance) / source_distance ) + target_range.first
+    }
+
     private fun drawTile(top_left_corner: LatLng) {
         val top_right_corner = LatLng(top_left_corner.latitude, top_left_corner.longitude+metersToLongitudeOffset(tile_length_meters, top_left_corner.latitude))
         val bottom_right_corner = LatLng(top_left_corner.latitude-metersToLatitudeOffset(tile_length_meters), top_left_corner.longitude+metersToLongitudeOffset(tile_length_meters, top_left_corner.latitude))
         val bottom_left_corner = LatLng(top_left_corner.latitude-metersToLatitudeOffset(tile_length_meters), top_left_corner.longitude)
 
-        google_map.addPolygon(
-            PolygonOptions()
-                .clickable(false)
-                .fillColor(Color.argb(100, 255, 255, 0))
-                .strokeWidth(1f)
-                .add( top_left_corner, top_right_corner, bottom_right_corner, bottom_left_corner )
-        )
+        lifecycleScope.launch(Dispatchers.IO) {
+            val tile_average : Double? = view_model.averageOf(top_left_corner, bottom_right_corner) ?: return@launch
+            if (view_model.values_scale == null) { return@launch }
+
+            val hue = scaleToRange(tile_average!!, view_model.values_scale!!, Pair(0.0, 150.0))
+            var color = ColorUtils.HSLToColor(floatArrayOf(hue.toFloat(), 1f, 0.6f))
+
+            withContext(Dispatchers.Main) {
+                google_map.addPolygon(
+                    PolygonOptions()
+                        .clickable(false)
+                        .fillColor(color)
+                        .strokeWidth(0f)
+                        .add( top_left_corner,  top_right_corner,  bottom_right_corner,  bottom_left_corner )
+                )
+            }
+        }
     }
 
     /**
