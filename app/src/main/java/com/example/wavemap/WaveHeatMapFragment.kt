@@ -50,16 +50,7 @@ class WaveHeatMapFragment : Fragment() {
         mapFragment?.getMapAsync { google_map ->
             this.google_map = google_map
 
-            // TODO permission dialog does not work here
-            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED) {
-                registerForActivityResult(ActivityResultContracts.RequestPermission()) { isGranted: Boolean ->
-                    if (isGranted) {
-                        initMap()
-                    } else {
-                        // TODO error handling
-                    }
-                }.launch(Manifest.permission.ACCESS_FINE_LOCATION)
-            } else {
+            if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                 initMap()
             }
         }
