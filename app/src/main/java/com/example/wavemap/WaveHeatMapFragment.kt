@@ -150,18 +150,22 @@ class WaveHeatMapFragment : Fragment() {
         val bottom_left_corner = LatLng(top_left_corner.latitude-metersToLatitudeOffset(tile_length_meters), top_left_corner.longitude)
 
         lifecycleScope.launch(Dispatchers.IO) {
-            val tile_average : Double? = view_model.averageOf(top_left_corner, bottom_right_corner) ?: return@launch
+            val tile_average : Double? = view_model.averageOf(top_left_corner, bottom_right_corner)
             if (view_model.values_scale == null) { return@launch }
 
-            val hue = scaleToRange(tile_average!!, view_model.values_scale!!, Pair(0.0, 150.0))
-            var color = ColorUtils.HSLToColor(floatArrayOf(hue.toFloat(), 1f, 0.6f))
+            var color = ColorUtils.setAlphaComponent(0, 0)
+            if (tile_average != null) {
+                val hue = scaleToRange(tile_average!!, view_model.values_scale!!, Pair(0.0, 150.0))
+                color = ColorUtils.setAlphaComponent(ColorUtils.HSLToColor(floatArrayOf(hue.toFloat(), 1f, 0.6f)), 100);
+            }
 
             withContext(Dispatchers.Main) {
                 google_map.addPolygon(
                     PolygonOptions()
                         .clickable(false)
                         .fillColor(color)
-                        .strokeWidth(0f)
+                        .strokeWidth(1.2f)
+                        .strokeColor(Color.argb(50, 0, 0, 0))
                         .add( top_left_corner,  top_right_corner,  bottom_right_corner,  bottom_left_corner )
                 )
             }
