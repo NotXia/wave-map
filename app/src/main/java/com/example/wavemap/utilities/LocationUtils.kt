@@ -16,7 +16,7 @@ class LocationUtils {
 
         suspend fun getCurrent(context: Context) : LatLng = suspendCoroutine { cont ->
             if ( ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ) {
-                return@suspendCoroutine cont.resumeWithException( SecurityException("Missing ACCESS_FINE_LOCATION permissions") )
+                return@suspendCoroutine cont.resumeWithException( SecurityException("Missing ACCESS_FINE_LOCATION permission") )
             }
 
             var fusedLocationClient = LocationServices.getFusedLocationProviderClient(context)
