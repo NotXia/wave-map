@@ -5,21 +5,17 @@ import android.app.Activity
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.activity.viewModels
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.ColorUtils
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.activityViewModels
-import androidx.fragment.app.viewModels
 import androidx.lifecycle.Observer
-import androidx.lifecycle.ViewModelProvider
 import androidx.lifecycle.lifecycleScope
 import com.example.wavemap.utilities.LocationUtils
+import com.example.wavemap.viewmodels.WiFiViewModel
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -31,7 +27,7 @@ import kotlin.math.*
 
 class WaveHeatMapFragment : Fragment() {
 
-    private val view_model : MeasureViewModel by activityViewModels()
+    private val view_model : WiFiViewModel by activityViewModels()
 
     private lateinit var google_map : GoogleMap
 
@@ -88,7 +84,7 @@ class WaveHeatMapFragment : Fragment() {
                     fillWithTiles()
                 }
 
-                view_model.last_measure.observe(viewLifecycleOwner, Observer<Long> { _ ->
+                view_model.last_measure_time.observe(viewLifecycleOwner, Observer<Long> { _ ->
                     google_map.clear()
                     fillWithTiles()
                 })
