@@ -5,6 +5,7 @@ import android.app.Activity
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Bundle
+import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -15,6 +16,7 @@ import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import com.example.wavemap.utilities.LocationUtils
+import com.example.wavemap.viewmodels.MeasureViewModel
 import com.example.wavemap.viewmodels.WiFiViewModel
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -25,15 +27,17 @@ import kotlinx.coroutines.*
 import kotlin.math.*
 
 
-class WaveHeatMapFragment : Fragment() {
-
-    private val view_model : WiFiViewModel by activityViewModels()
+class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment() {
 
     private lateinit var google_map : GoogleMap
 
     private var tile_length_meters = 500.0
     private lateinit var center : LatLng
     private lateinit var top_left_center : LatLng
+
+    fun changeViewModel(view_model : MeasureViewModel) {
+        this.view_model = view_model
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?) : View? {
         return inflater.inflate(R.layout.fragment_map, container, false)
@@ -123,12 +127,26 @@ class WaveHeatMapFragment : Fragment() {
     }
 
     private fun scaleToRange(value: Double, source_range: Pair<Double, Double>, target_range: Pair<Double, Double>) : Double {
-        if (value <= source_range.first) { return target_range.first }
-        if (value >= source_range.second) { return target_range.second }
+        var real_source = source_range
+        var real_value = value
 
-        val source_distance = (source_range.second - source_range.first)
+        // Range extremes have to be inverted and value rescaled
+        if (source_range.first > source_range.second) {
+            real_value = if (value > (source_range.first - source_range.second) / 2) {
+                value + (source_range.first - source_range.second) - 2 * (value - source_range.second)
+            }
+            else {
+                value - (source_range.first - source_range.second) + 2 * (source_range.first - value)
+            }
+            real_source = Pair(source_range.second, source_range.first)
+        }
+
+        if (real_value <= real_source.first) { return target_range.first }
+        if (real_value >= real_source.second) { return target_range.second }
+
+        val source_distance = (real_source.second - real_source.first)
         val target_distance = (target_range.second - target_range.first)
-        return ( ((value - source_range.first) * target_distance) / source_distance ) + target_range.first
+        return ( ( ((real_value - real_source.first) * target_distance) / source_distance ) + target_range.first )
     }
 
     private fun drawTile(top_left_corner: LatLng) {
@@ -142,7 +160,7 @@ class WaveHeatMapFragment : Fragment() {
 
             var color = ColorUtils.setAlphaComponent(0, 0)
             if (tile_average != null) {
-                val hue = scaleToRange(tile_average!!, view_model.values_scale!!, Pair(0.0, 150.0))
+                val hue = scaleToRange(tile_average!!, view_model.values_scale!!, Pair(0.0, 150.0)) // 0 -> Red | 150 -> Green
                 color = ColorUtils.setAlphaComponent(ColorUtils.HSLToColor(floatArrayOf(hue.toFloat(), 1f, 0.6f)), 100);
             }
 

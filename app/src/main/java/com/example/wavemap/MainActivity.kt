@@ -10,6 +10,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.commit
 import androidx.lifecycle.lifecycleScope
+import com.example.wavemap.viewmodels.NoiseViewModel
 import com.example.wavemap.viewmodels.WiFiViewModel
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
@@ -21,17 +22,18 @@ class MainActivity : AppCompatActivity() {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val model: WiFiViewModel by viewModels()
+//        val model: WiFiViewModel by viewModels()
+        val model: NoiseViewModel by viewModels()
 
-        registerForActivityResult(ActivityResultContracts.RequestPermission()) { is_granted: Boolean ->
-            if (is_granted) {
+        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { is_granted: Map<String, Boolean> ->
+            if (is_granted.values.all{ granted -> granted }) {
                 supportFragmentManager.commit {
-                    replace(R.id.fragment_container_map, WaveHeatMapFragment())
+                    replace(R.id.fragment_container_map, WaveHeatMapFragment(model))
                 }
             } else {
                 // TODO error handling
             }
-        }.launch(Manifest.permission.ACCESS_FINE_LOCATION)
+        }.launch(arrayOf(Manifest.permission.ACCESS_FINE_LOCATION, Manifest.permission.RECORD_AUDIO))
 
 
         findViewById<Button>(R.id.btn_scan).setOnClickListener(View.OnClickListener {
