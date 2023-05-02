@@ -5,6 +5,7 @@ import android.content.Context
 import android.content.pm.PackageManager
 import android.media.MediaRecorder
 import android.os.Build
+import android.util.Log
 import androidx.core.content.ContextCompat
 import com.example.wavemap.db.MeasureTable
 import com.example.wavemap.db.MeasureType
@@ -14,6 +15,7 @@ import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
 import kotlinx.coroutines.launch
+import java.io.File
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
@@ -41,7 +43,11 @@ class NoiseSampler : WaveSampler {
         media_recorder.setAudioSource(MediaRecorder.AudioSource.MIC)
         media_recorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
         media_recorder.setAudioEncoder(MediaRecorder.AudioEncoder.AMR_NB)
-        media_recorder.setOutputFile("/dev/null")
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            media_recorder.setOutputFile( File(context.filesDir, "recording.mp3") )
+        } else {
+            media_recorder.setOutputFile("/dev/null")
+        }
         media_recorder.prepare()
 
         return media_recorder
