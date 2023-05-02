@@ -25,12 +25,12 @@ import kotlin.math.log10
 class NoiseSampler : WaveSampler {
     private val context : Context
     private val db : WaveDatabase
-    private var sample_amount : Int
+    private var sample_time : Int
 
-    constructor(context: Context, db: WaveDatabase, sample_time: Int=10) {
+    constructor(context: Context, db: WaveDatabase, sample_time: Int=5) {
         this.context = context
         this.db = db
-        this.sample_amount = sample_time
+        this.sample_time = sample_time
     }
 
     private fun initMediaRecorder() : MediaRecorder {
@@ -64,8 +64,8 @@ class NoiseSampler : WaveSampler {
 
             media_recorder.start()
             media_recorder.maxAmplitude  // the first call to maxAmplitude always return 0
-            for (i in 1..sample_amount) {
-                delay(100)
+            for (i in 1..sample_time) {
+                delay(500)
 
                 val amplitude = media_recorder.maxAmplitude
                 if (amplitude != 0) {
@@ -78,7 +78,7 @@ class NoiseSampler : WaveSampler {
             media_recorder.stop()
             media_recorder.release()
 
-            sum_db /= sample_amount
+            sum_db /= sample_time
             val current_location: LatLng = LocationUtils.getCurrent(context)
 
             cont.resume(listOf( MeasureTable(0, MeasureType.NOISE, sum_db, System.currentTimeMillis(), current_location.latitude, current_location.longitude, "") ))
