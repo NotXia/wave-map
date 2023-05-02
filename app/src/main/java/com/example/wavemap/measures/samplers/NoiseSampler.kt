@@ -1,15 +1,16 @@
-package com.example.wavemap.measures
+package com.example.wavemap.measures.samplers
 
 import android.Manifest
 import android.content.Context
 import android.content.pm.PackageManager
 import android.media.MediaRecorder
 import android.os.Build
-import android.util.Log
 import androidx.core.content.ContextCompat
 import com.example.wavemap.db.MeasureTable
 import com.example.wavemap.db.MeasureType
 import com.example.wavemap.db.WaveDatabase
+import com.example.wavemap.measures.WaveMeasure
+import com.example.wavemap.measures.WaveSampler
 import com.example.wavemap.utilities.LocationUtils
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.GlobalScope

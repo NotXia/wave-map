@@ -4,7 +4,7 @@ import android.app.Application
 import androidx.room.Room
 import com.example.wavemap.db.WaveDatabase
 import com.example.wavemap.measures.WaveSampler
-import com.example.wavemap.measures.WiFiSampler
+import com.example.wavemap.measures.samplers.WiFiSampler
 
 class WiFiViewModel(application : Application) : MeasureViewModel(application) {
     override lateinit var sampler : WaveSampler

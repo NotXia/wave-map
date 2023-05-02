@@ -1,4 +1,4 @@
-package com.example.wavemap.measures
+package com.example.wavemap.measures.samplers
 
 import android.Manifest
 import android.content.BroadcastReceiver
@@ -12,6 +12,8 @@ import com.example.wavemap.db.WaveDatabase
 import com.example.wavemap.db.MeasureTable
 import com.example.wavemap.db.MeasureType
 import com.example.wavemap.exceptions.MeasureException
+import com.example.wavemap.measures.WaveMeasure
+import com.example.wavemap.measures.WaveSampler
 import com.example.wavemap.utilities.LocationUtils
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.GlobalScope
