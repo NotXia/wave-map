@@ -37,6 +37,8 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
 
     fun changeViewModel(view_model : MeasureViewModel) {
         this.view_model = view_model
+        google_map.clear()
+        fillWithTiles()
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?) : View? {
