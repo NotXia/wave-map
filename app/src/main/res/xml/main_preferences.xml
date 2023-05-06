@@ -13,4 +13,8 @@
         app:fragment="com.example.wavemap.ui.settings.sections.NoiseSettingsFragment"
         app:title="@string/noise_settings" />
 
+    <Preference
+        app:fragment="com.example.wavemap.ui.settings.sections.BluetoothSettingsFragment"
+        app:title="@string/bluetooth_settings" />
+
 </PreferenceScreen>

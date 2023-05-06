@@ -4,7 +4,7 @@ import androidx.room.*
 import com.example.wavemap.measures.WaveMeasure
 
 enum class MeasureType {
-    WIFI, NOISE, LTE
+    WIFI, NOISE, LTE, BLUETOOTH
 }
 
 @Entity(tableName="measures", indices=[Index(value = ["type"])])

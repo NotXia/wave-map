@@ -32,7 +32,15 @@ class MainActivity : AppCompatActivity() {
         val wifi_model : WiFiViewModel by viewModels()
         val lte_model : LTEViewModel by viewModels()
         val noise_model : NoiseViewModel by viewModels()
+        val bluetooth_model : BluetoothViewModel by viewModels()
         var curr_model : MeasureViewModel = wifi_model
+
+        val spinner_options = arrayOf(
+            Pair(resources.getString(R.string.wifi), wifi_model),
+            Pair(resources.getString(R.string.lte), lte_model),
+            Pair(resources.getString(R.string.noise), noise_model),
+            Pair(resources.getString(R.string.bluetooth), bluetooth_model)
+        )
 
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { is_granted: Map<String, Boolean> ->
             if (is_granted.values.all{ granted -> granted }) {
@@ -45,17 +53,13 @@ class MainActivity : AppCompatActivity() {
         }.launch(
             arrayOf(
                 Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.RECORD_AUDIO
+                Manifest.permission.RECORD_AUDIO,
+                Manifest.permission.BLUETOOTH_SCAN
             )
         )
 
 
         val spinner : Spinner = findViewById(R.id.spinner_sampler)
-        val spinner_options = arrayOf(
-            Pair(resources.getString(R.string.wifi), wifi_model),
-            Pair(resources.getString(R.string.lte), lte_model),
-            Pair(resources.getString(R.string.noise), noise_model)
-        )
         spinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, spinner_options.map{ it.first })
         spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener{
             override fun onNothingSelected(parent: AdapterView<*>?) {

@@ -6,9 +6,12 @@
     <string name="wifi">Wi-Fi</string>
     <string name="lte">LTE</string>
     <string name="noise">Suono</string>
+    <string name="bluetooth">Bluetooth</string>
 
     <string name="settings">Impostazioni</string>
     <string name="wifi_settings">Impostazioni Wi-Fi</string>
     <string name="lte_settings">Impostazioni LTE</string>
     <string name="noise_settings">Impostazioni suono</string>
+    <string name="bluetooth_settings">Impostazioni Bluetooth</string>
+
 </resources>
