@@ -1,4 +1,4 @@
-package com.example.wavemap.viewmodels
+package com.example.wavemap.ui.main
 
 import android.app.Application
 import androidx.room.Room

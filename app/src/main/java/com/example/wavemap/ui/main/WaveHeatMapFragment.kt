@@ -1,23 +1,20 @@
-package com.example.wavemap
+package com.example.wavemap.ui.main
 
 import android.Manifest
 import android.app.Activity
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Bundle
-import android.util.Log
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.ColorUtils
 import androidx.fragment.app.Fragment
-import androidx.fragment.app.activityViewModels
 import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
+import com.example.wavemap.R
 import com.example.wavemap.utilities.LocationUtils
-import com.example.wavemap.viewmodels.MeasureViewModel
-import com.example.wavemap.viewmodels.WiFiViewModel
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap

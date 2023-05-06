@@ -1,8 +1,8 @@
-package com.example.wavemap
+package com.example.wavemap.ui.main
 
 import android.Manifest
 import android.os.Bundle
-import android.util.Log
+import android.view.Menu
 import android.view.View
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
@@ -13,10 +13,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.commit
 import androidx.lifecycle.lifecycleScope
-import com.example.wavemap.viewmodels.LTEViewModel
-import com.example.wavemap.viewmodels.MeasureViewModel
-import com.example.wavemap.viewmodels.NoiseViewModel
-import com.example.wavemap.viewmodels.WiFiViewModel
+import com.example.wavemap.R
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -79,4 +76,10 @@ class MainActivity : AppCompatActivity() {
         })
     }
 
+
+    override fun onCreateOptionsMenu(menu: Menu): Boolean {
+        super.onCreateOptionsMenu(menu)
+        menuInflater.inflate(R.menu.menu_options, menu)
+        return true
+    }
 }
