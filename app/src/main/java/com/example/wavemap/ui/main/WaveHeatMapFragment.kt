@@ -34,6 +34,10 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
 
     fun changeViewModel(view_model : MeasureViewModel) {
         this.view_model = view_model
+        refreshMap()
+    }
+
+    fun refreshMap() {
         google_map.clear()
         fillWithTiles()
     }
@@ -82,14 +86,12 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
                 center = current_location
 
                 google_map.setOnCameraIdleListener {
-                    google_map.clear()
                     updateTilesLength()
-                    fillWithTiles()
+                    refreshMap()
                 }
 
                 view_model.last_measure_time.observe(viewLifecycleOwner, Observer<Long> { _ ->
-                    google_map.clear()
-                    fillWithTiles()
+                    refreshMap()
                 })
             }
         }

@@ -75,6 +75,9 @@ class MainActivity : AppCompatActivity() {
             lifecycleScope.launch(Dispatchers.IO) {
                 try {
                     curr_model.measure()
+                    withContext(Dispatchers.Main) {
+                        (supportFragmentManager.findFragmentById(R.id.fragment_container_map) as WaveHeatMapFragment?)?.refreshMap()
+                    }
                 }
                 catch (err : Exception) {
                     withContext(Dispatchers.Main) {
