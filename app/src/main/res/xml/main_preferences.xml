@@ -1,0 +1,16 @@
+<?xml version="1.0" encoding="utf-8"?>
+<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <Preference
+        app:fragment="com.example.wavemap.ui.settings.sections.WiFiSettingsFragment"
+        app:title="@string/wifi_settings" />
+
+    <Preference
+        app:fragment="com.example.wavemap.ui.settings.sections.LTESettingsFragment"
+        app:title="@string/lte_settings" />
+
+    <Preference
+        app:fragment="com.example.wavemap.ui.settings.sections.NoiseSettingsFragment"
+        app:title="@string/noise_settings" />
+
+</PreferenceScreen>

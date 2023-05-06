@@ -1,7 +1,10 @@
 package com.example.wavemap.ui.main
 
 import android.Manifest
+import android.content.Intent
+import android.content.SharedPreferences
 import android.os.Bundle
+import android.util.Log
 import android.view.Menu
 import android.view.View
 import android.widget.AdapterView
@@ -13,7 +16,9 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.commit
 import androidx.lifecycle.lifecycleScope
+import androidx.preference.PreferenceManager
 import com.example.wavemap.R
+import com.example.wavemap.ui.settings.SettingsActivity
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
@@ -69,6 +74,7 @@ class MainActivity : AppCompatActivity() {
                 }
                 catch (err : Exception) {
                     withContext(Dispatchers.Main) {
+                        // TODO Error handling
                         Toast.makeText(baseContext, ":(", Toast.LENGTH_SHORT).show()
                     }
                 }
@@ -79,7 +85,10 @@ class MainActivity : AppCompatActivity() {
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         super.onCreateOptionsMenu(menu)
+
         menuInflater.inflate(R.menu.menu_options, menu)
+        menu.findItem(R.id.menu_settings).intent = Intent(this, SettingsActivity::class.java)
+
         return true
     }
 }
