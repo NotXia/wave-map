@@ -47,7 +47,7 @@ class LTESampler : WaveSampler {
             val current_location: LatLng = LocationUtils.getCurrent(context)
 
             return@launch cont.resume( listOf(
-                MeasureTable(0, MeasureType.NOISE,
+                MeasureTable(0, MeasureType.LTE,
                 lte_info!!.cellSignalStrength.dbm.toDouble(),
                 System.currentTimeMillis(),
                 current_location.latitude, current_location.longitude, "")
