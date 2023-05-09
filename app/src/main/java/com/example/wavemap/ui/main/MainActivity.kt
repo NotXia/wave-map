@@ -2,9 +2,7 @@ package com.example.wavemap.ui.main
 
 import android.Manifest
 import android.content.Intent
-import android.content.SharedPreferences
 import android.os.Bundle
-import android.util.Log
 import android.view.Menu
 import android.view.View
 import android.widget.AdapterView
@@ -16,7 +14,6 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.commit
 import androidx.lifecycle.lifecycleScope
-import androidx.preference.PreferenceManager
 import com.example.wavemap.R
 import com.example.wavemap.ui.settings.SettingsActivity
 import kotlinx.coroutines.Dispatchers
@@ -25,6 +22,8 @@ import kotlinx.coroutines.withContext
 
 
 class MainActivity : AppCompatActivity() {
+    private lateinit var curr_model : MeasureViewModel
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
@@ -33,7 +32,7 @@ class MainActivity : AppCompatActivity() {
         val lte_model : LTEViewModel by viewModels()
         val noise_model : NoiseViewModel by viewModels()
         val bluetooth_model : BluetoothViewModel by viewModels()
-        var curr_model : MeasureViewModel = wifi_model
+        curr_model = wifi_model
 
         val spinner_options = arrayOf(
             Pair(resources.getString(R.string.wifi), wifi_model),
@@ -87,6 +86,12 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         })
+    }
+
+    override fun onResume() {
+        super.onResume()
+        curr_model.loadSettingsPreferences()
+        (supportFragmentManager.findFragmentById(R.id.fragment_container_map) as WaveHeatMapFragment?)?.refreshMap()
     }
 
 

@@ -1,5 +1,26 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
     xmlns:app="http://schemas.android.com/apk/res-auto">
+
+    <EditTextPreference
+        android:key="wifi_range_bad"
+        android:title="@string/range_bad"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:defaultValue="@string/wifi_default_range_bad" />
+
+    <EditTextPreference
+        android:key="wifi_range_good"
+        android:title="@string/range_good"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:defaultValue="@string/wifi_default_range_good" />
+
+    <EditTextPreference
+        android:key="wifi_past_limit"
+        android:title="@string/past_limit"
+        android:selectAllOnFocus="true"
+        android:singleLine="true"
+        android:defaultValue="1" />
 
 </PreferenceScreen>

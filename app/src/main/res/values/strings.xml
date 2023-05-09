@@ -13,4 +13,8 @@
     <string name="noise_settings">Noise settings</string>
     <string name="bluetooth_settings">Bluetooth settings</string>
 
+    <string name="range_bad">Measure worst value</string>
+    <string name="range_good">Measure best value</string>
+    <string name="past_limit">Past measures to consider</string>
+
 </resources>

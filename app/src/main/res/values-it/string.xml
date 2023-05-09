@@ -14,4 +14,8 @@
     <string name="noise_settings">Impostazioni suono</string>
     <string name="bluetooth_settings">Impostazioni Bluetooth</string>
 
+    <string name="range_bad">Valore misurazione pessima</string>
+    <string name="range_good">Valore misurazione ottima</string>
+    <string name="past_limit">Misurazioni passate da considerare</string>
+
 </resources>
