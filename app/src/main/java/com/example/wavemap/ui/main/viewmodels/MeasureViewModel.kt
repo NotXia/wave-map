@@ -1,4 +1,4 @@
-package com.example.wavemap.ui.main
+package com.example.wavemap.ui.main.viewmodels
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel

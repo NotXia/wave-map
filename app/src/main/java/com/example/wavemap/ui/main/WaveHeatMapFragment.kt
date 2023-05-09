@@ -14,6 +14,7 @@ import androidx.fragment.app.Fragment
 import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import com.example.wavemap.R
+import com.example.wavemap.ui.main.viewmodels.MeasureViewModel
 import com.example.wavemap.utilities.LocationUtils
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.CameraUpdateFactory
@@ -38,6 +39,7 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
     }
 
     fun refreshMap() {
+        if (!this::google_map.isInitialized) { return }
         google_map.clear()
         fillWithTiles()
     }
