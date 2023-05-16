@@ -1,6 +1,7 @@
 package com.example.wavemap.measures.samplers
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.bluetooth.BluetoothDevice
 import android.bluetooth.BluetoothManager
 import android.content.BroadcastReceiver
@@ -15,6 +16,7 @@ import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.RECEIVER_EXPORTED
 import androidx.core.content.ContextCompat.registerReceiver
+import com.example.wavemap.db.BSSIDTable
 import com.example.wavemap.db.MeasureTable
 import com.example.wavemap.db.MeasureType
 import com.example.wavemap.db.WaveDatabase
@@ -49,6 +51,9 @@ class BluetoothSampler : WaveSampler {
         if ( ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED ) {
             return@suspendCoroutine cont.resumeWithException( SecurityException("Missing BLUETOOTH_SCAN permission") )
         }
+        if ( ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED ) {
+            return@suspendCoroutine cont.resumeWithException( SecurityException("Missing BLUETOOTH_CONNECT permissions") )
+        }
         if ( ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ) {
             return@suspendCoroutine cont.resumeWithException( SecurityException("Missing ACCESS_FINE_LOCATION permissions") )
         }
@@ -59,29 +64,36 @@ class BluetoothSampler : WaveSampler {
         lateinit var bt_receiver : BroadcastReceiver
         val handler = Handler(Looper.getMainLooper())
         val endScan = Runnable {
-            context.unregisterReceiver(bt_receiver)
-            return@Runnable cont.resume( bt_list )
+            try {
+                context.unregisterReceiver(bt_receiver)
+                return@Runnable cont.resume( bt_list )
+            }
+            catch (err : IllegalArgumentException) { /* Already unregistered */ }
         }
 
         bt_receiver = object : BroadcastReceiver() {
+            @SuppressLint("MissingPermission")
             override fun onReceive(context: Context, intent: Intent) {
                 when (intent.action) {
                     BluetoothDevice.ACTION_FOUND -> {
                         handler.removeCallbacks(endScan)
+
                         GlobalScope.launch {
                             val device: BluetoothDevice? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
                                 intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE, BluetoothDevice::class.java)
                             } else {
                                 intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
                             }
+                            if (device == null) { return@launch }
                             val rssi = intent.getShortExtra(BluetoothDevice.EXTRA_RSSI, Short.MIN_VALUE).toInt()
                             val current_location: LatLng = LocationUtils.getCurrent(context) // Require location at each measure for more accuracy
 
                             bt_list.add( MeasureTable(0, MeasureType.BLUETOOTH,
                                 rssi.toDouble(),
                                 timestamp, current_location.latitude, current_location.longitude,
-                                device?.address ?: "")
+                                device.address ?: "")
                             )
+                            db.bssidDAO().insert( BSSIDTable(device.address, if (device.name != null) device.name else "") )
 
                             handler.postDelayed(endScan, 5000)
                         }

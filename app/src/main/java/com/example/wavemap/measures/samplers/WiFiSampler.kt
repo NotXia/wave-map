@@ -7,7 +7,9 @@ import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
 import android.net.wifi.WifiManager
+import android.os.Build
 import androidx.core.content.ContextCompat
+import com.example.wavemap.db.BSSIDTable
 import com.example.wavemap.db.WaveDatabase
 import com.example.wavemap.db.MeasureTable
 import com.example.wavemap.db.MeasureType
@@ -55,6 +57,12 @@ class WiFiSampler : WaveSampler {
 
                     for (wifi in results) {
                         wifi_list.add( MeasureTable(0, MeasureType.WIFI, wifi.level.toDouble(), timestamp, current_location.latitude, current_location.longitude, wifi.BSSID) )
+                        db.bssidDAO().insert(
+                            BSSIDTable(
+                                wifi.BSSID,
+                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) wifi.wifiSsid.toString() else wifi.SSID
+                            )
+                        )
                     }
 
                     cont.resume( wifi_list )
