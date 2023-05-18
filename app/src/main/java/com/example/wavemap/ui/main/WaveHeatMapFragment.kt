@@ -1,10 +1,12 @@
 package com.example.wavemap.ui.main
 
 import android.Manifest
+import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.pm.PackageManager
 import android.graphics.Color
 import android.os.Bundle
+import android.os.Looper
 import android.view.LayoutInflater
 import android.view.View
 import android.view.ViewGroup
@@ -22,6 +24,9 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
 import kotlinx.coroutines.*
+import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
+import kotlin.coroutines.suspendCoroutine
 import kotlin.math.*
 
 
@@ -67,24 +72,13 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
             throw SecurityException("Missing ACCESS_FINE_LOCATION permission")
         }
 
-        initLocationRetriever()
-
-        google_map.isMyLocationEnabled = true;
         GlobalScope.launch {
-            var current_location : LatLng? = null
-
-            // Location service may still not have the current position
-            for (i in 0..20) {
-                try {
-                    current_location = LocationUtils.getCurrent(activity as Activity)
-                    break
-                }
-                catch (err: RuntimeException) { delay(500) }
-            }
-            if (current_location == null) { throw RuntimeException("Cannot retrieve location") }
-
             withContext(Dispatchers.Main) {
-                google_map.animateCamera(CameraUpdateFactory.newLatLngZoom(current_location, 18f))
+                initLocationRetriever()
+                var current_location : LatLng = LocationUtils.getCurrent(activity as Activity)
+
+                google_map.isMyLocationEnabled = true;
+                google_map.moveCamera(CameraUpdateFactory.newLatLngZoom(current_location, 18f))
                 center = current_location
 
                 google_map.setOnCameraIdleListener {
@@ -99,23 +93,43 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
         }
     }
 
-    private fun initLocationRetriever() {
-        if ( ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ) {
-            throw SecurityException("Missing ACCESS_FINE_LOCATION permission")
-        }
+    private suspend fun initLocationRetriever() : Unit = suspendCoroutine { cont ->
+        GlobalScope.launch {
+            if ( ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ) {
+                return@launch cont.resumeWithException( SecurityException("Missing ACCESS_FINE_LOCATION permission") )
+            }
 
-        LocationServices.getFusedLocationProviderClient(requireActivity()).requestLocationUpdates(
-            LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 200).apply {
+            val location_options = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 200).apply {
                 setGranularity(Granularity.GRANULARITY_PERMISSION_LEVEL)
                 setWaitForAccurateLocation(true)
-            }.build(),
-            object : LocationCallback() {
-                override fun onLocationResult(locationResult: LocationResult) {
-                    // TODO update heat map
-                }
-            },
-            null
-        )
+            }.build()
+            val location_callback = object : LocationCallback() {
+                override fun onLocationResult(locationResult: LocationResult) { }
+            }
+            val fused_location_provider = LocationServices.getFusedLocationProviderClient(requireActivity())
+
+            if (LocationUtils.getCurrent(activity as Activity) != null) { // A location is already available
+                // There is no need to wait for a LocationResult, setup for location updates and exit immediately
+                fused_location_provider.requestLocationUpdates(location_options, location_callback, Looper.getMainLooper())
+                cont.resume(Unit)
+            }
+            else {
+                // Since there is no location available, wait for a location before exiting
+                fused_location_provider.requestLocationUpdates(
+                    location_options,
+                    object : LocationCallback() {
+                        @SuppressLint("MissingPermission")
+                        override fun onLocationResult(locationResult: LocationResult) {
+                            // When a location is available, resets the location updates callback
+                            fused_location_provider.removeLocationUpdates(this)
+                            fused_location_provider.requestLocationUpdates(location_options, location_callback, Looper.getMainLooper())
+                            cont.resume(Unit)
+                        }
+                    },
+                    Looper.getMainLooper()
+                )
+            }
+        }
     }
 
     private fun metersToLatitudeOffset(meters: Double) : Double {

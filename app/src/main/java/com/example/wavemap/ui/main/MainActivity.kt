@@ -24,7 +24,9 @@ import kotlinx.coroutines.withContext
 
 
 class MainActivity : AppCompatActivity() {
+
     private lateinit var curr_model : MeasureViewModel
+    private lateinit var map_fragment : WaveHeatMapFragment
 
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
@@ -34,7 +36,6 @@ class MainActivity : AppCompatActivity() {
         val lte_model : LTEViewModel by viewModels()
         val noise_model : NoiseViewModel by viewModels()
         val bluetooth_model : BluetoothViewModel by viewModels()
-        curr_model = wifi_model
 
         val spinner_options = arrayOf(
             Pair(resources.getString(R.string.wifi), wifi_model),
@@ -43,13 +44,18 @@ class MainActivity : AppCompatActivity() {
             Pair(resources.getString(R.string.bluetooth), bluetooth_model)
         )
 
+        curr_model = wifi_model
+        map_fragment = WaveHeatMapFragment(curr_model)
+
+
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { is_granted: Map<String, Boolean> ->
-            if (is_granted.values.all{ granted -> granted }) {
-                supportFragmentManager.commit {
-                    replace(R.id.fragment_container_map, WaveHeatMapFragment(curr_model))
-                }
-            } else {
+            if (!is_granted.values.all{ granted -> granted }) {
                 // TODO error handling
+                return@registerForActivityResult
+            }
+
+            supportFragmentManager.commit {
+                replace(R.id.fragment_container_map, map_fragment)
             }
         }.launch(
             arrayOf(
@@ -63,13 +69,13 @@ class MainActivity : AppCompatActivity() {
 
         val spinner : Spinner = findViewById(R.id.spinner_sampler)
         spinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, spinner_options.map{ it.first })
+        spinner.setSelection(0, false) // Selects the first element of the spinner (before adding the listener)
         spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener{
-            override fun onNothingSelected(parent: AdapterView<*>?) {
-            }
+            override fun onNothingSelected(parent: AdapterView<*>?) { }
 
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 curr_model = spinner_options[position].second
-                (supportFragmentManager.findFragmentById(R.id.fragment_container_map) as WaveHeatMapFragment?)?.changeViewModel(curr_model)
+                map_fragment.changeViewModel(curr_model)
             }
         }
 
@@ -77,9 +83,7 @@ class MainActivity : AppCompatActivity() {
             lifecycleScope.launch(Dispatchers.IO) {
                 try {
                     curr_model.measure()
-                    withContext(Dispatchers.Main) {
-                        (supportFragmentManager.findFragmentById(R.id.fragment_container_map) as WaveHeatMapFragment?)?.refreshMap()
-                    }
+                    withContext(Dispatchers.Main) { map_fragment.refreshMap() }
                 }
                 catch (err : Exception) {
                     withContext(Dispatchers.Main) {
@@ -93,8 +97,14 @@ class MainActivity : AppCompatActivity() {
 
     override fun onResume() {
         super.onResume()
-        curr_model.loadSettingsPreferences()
-        (supportFragmentManager.findFragmentById(R.id.fragment_container_map) as WaveHeatMapFragment?)?.refreshMap()
+
+        try {
+            curr_model.loadSettingsPreferences()
+            map_fragment.refreshMap()
+        }
+        catch (err : Exception) {
+            // TODO: Handle error
+        }
     }
 
 
@@ -106,4 +116,5 @@ class MainActivity : AppCompatActivity() {
 
         return true
     }
+
 }
