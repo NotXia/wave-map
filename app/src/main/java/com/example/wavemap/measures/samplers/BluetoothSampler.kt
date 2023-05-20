@@ -12,14 +12,10 @@ import android.content.pm.PackageManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import android.util.Log
 import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.RECEIVER_EXPORTED
 import androidx.core.content.ContextCompat.registerReceiver
-import com.example.wavemap.db.BSSIDTable
-import com.example.wavemap.db.MeasureTable
-import com.example.wavemap.db.MeasureType
-import com.example.wavemap.db.WaveDatabase
+import com.example.wavemap.db.*
 import com.example.wavemap.measures.WaveMeasure
 import com.example.wavemap.measures.WaveSampler
 import com.example.wavemap.utilities.LocationUtils
@@ -93,7 +89,7 @@ class BluetoothSampler : WaveSampler {
                                 timestamp, current_location.latitude, current_location.longitude,
                                 device.address ?: "")
                             )
-                            db.bssidDAO().insert( BSSIDTable(device.address, if (device.name != null) device.name else "") )
+                            db.bssidDAO().insert( BSSIDTable(device.address, if (device.name != null) device.name else "", BSSIDType.BLUETOOTH) )
 
                             handler.postDelayed(endScan, 5000)
                         }

@@ -9,10 +9,7 @@ import android.content.pm.PackageManager
 import android.net.wifi.WifiManager
 import android.os.Build
 import androidx.core.content.ContextCompat
-import com.example.wavemap.db.BSSIDTable
-import com.example.wavemap.db.WaveDatabase
-import com.example.wavemap.db.MeasureTable
-import com.example.wavemap.db.MeasureType
+import com.example.wavemap.db.*
 import com.example.wavemap.exceptions.MeasureException
 import com.example.wavemap.measures.WaveMeasure
 import com.example.wavemap.measures.WaveSampler
@@ -56,12 +53,12 @@ class WiFiSampler : WaveSampler {
                     val timestamp = System.currentTimeMillis()
 
                     for (wifi in results) {
+                        var frequency = if (wifi.frequency >= 4900) "5Gz" else "2.4Gz"
+                        val ssid = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) wifi.wifiSsid.toString().drop(1).dropLast(1).trim() else wifi.SSID
+
                         wifi_list.add( MeasureTable(0, MeasureType.WIFI, wifi.level.toDouble(), timestamp, current_location.latitude, current_location.longitude, wifi.BSSID) )
                         db.bssidDAO().insert(
-                            BSSIDTable(
-                                wifi.BSSID,
-                                if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) wifi.wifiSsid.toString() else wifi.SSID
-                            )
+                            BSSIDTable(wifi.BSSID, if (ssid.isNotEmpty()) "${ssid} (${frequency})" else "${wifi.BSSID}", BSSIDType.WIFI)
                         )
                     }
 

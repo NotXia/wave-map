@@ -2,10 +2,14 @@ package com.example.wavemap.db
 
 import androidx.room.*
 
+enum class BSSIDType {
+    WIFI, BLUETOOTH
+}
 @Entity(tableName="bssids", indices=[Index(value = ["bssid"])])
 data class BSSIDTable (
     @PrimaryKey()                   val bssid : String,
-    @ColumnInfo(name = "ssid")      val ssid: String
+    @ColumnInfo(name = "ssid")      val ssid: String,
+    @ColumnInfo(name = "type")      val type: BSSIDType
 )
 
 @Dao
