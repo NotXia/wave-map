@@ -12,13 +12,16 @@ import android.widget.Spinner
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
+import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.commit
 import androidx.lifecycle.lifecycleScope
 import com.example.wavemap.R
 import com.example.wavemap.ui.main.viewmodels.*
 import com.example.wavemap.ui.settings.SettingsActivity
+import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.Dispatchers
+import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -44,6 +47,10 @@ class MainActivity : AppCompatActivity() {
             Pair(resources.getString(R.string.bluetooth), bluetooth_model)
         )
 
+        val measure_spinner : Spinner = findViewById(R.id.spinner_sampler)
+        val fab_start_measure : FloatingActionButton = findViewById(R.id.btn_scan)
+        val fab_query : FloatingActionButton = findViewById(R.id.btn_query)
+
         curr_model = wifi_model
         map_fragment = WaveHeatMapFragment(curr_model)
 
@@ -67,32 +74,61 @@ class MainActivity : AppCompatActivity() {
         )
 
 
-        val spinner : Spinner = findViewById(R.id.spinner_sampler)
-        spinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, spinner_options.map{ it.first })
-        spinner.setSelection(0, false) // Selects the first element of the spinner (before adding the listener)
-        spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener{
+        // Measure type spinner
+        measure_spinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, spinner_options.map{ it.first })
+        measure_spinner.setSelection(0, false) // Selects the first element of the spinner (before adding the listener)
+        measure_spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener{
             override fun onNothingSelected(parent: AdapterView<*>?) { }
 
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 curr_model = spinner_options[position].second
                 map_fragment.changeViewModel(curr_model)
+
+                if (curr_model is QueryableMeasureViewModel) {
+                    fab_query.visibility = View.VISIBLE
+                }
+                else {
+                    fab_query.visibility = View.INVISIBLE
+                }
             }
         }
 
-        findViewById<View>(R.id.btn_scan).setOnClickListener(View.OnClickListener {
+        // New measurement
+        fab_start_measure.setOnClickListener {
             lifecycleScope.launch(Dispatchers.IO) {
                 try {
                     curr_model.measure()
                     withContext(Dispatchers.Main) { map_fragment.refreshMap() }
-                }
-                catch (err : Exception) {
+                } catch (err: Exception) {
                     withContext(Dispatchers.Main) {
                         // TODO Error handling
                         Toast.makeText(baseContext, ":(", Toast.LENGTH_SHORT).show()
                     }
                 }
             }
-        })
+        }
+
+        // Filter measures
+        fab_query.setOnClickListener {
+            if (curr_model !is QueryableMeasureViewModel) { return@setOnClickListener }
+            val queryable_model = curr_model as QueryableMeasureViewModel
+
+            GlobalScope.launch {
+                val queries = ( listOf(Pair(getString(R.string.remove_filter), null)) + queryable_model.listQueries() )
+                val items : Array<CharSequence> = queries.map{ it.first }.toTypedArray()
+
+                withContext(Dispatchers.Main) {
+                    val dialog_builder : AlertDialog.Builder = AlertDialog.Builder(this@MainActivity)
+
+                    dialog_builder.setTitle(getString(R.string.filter_measures))
+                    dialog_builder.setItems(items) { _, index ->
+                        queryable_model.changeQuery(queries[index].second)
+                        map_fragment.refreshMap()
+                    }
+                    dialog_builder.create().show()
+                }
+            }
+        }
     }
 
     override fun onResume() {

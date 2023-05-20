@@ -89,7 +89,7 @@ class BluetoothSampler : WaveSampler {
                                 timestamp, current_location.latitude, current_location.longitude,
                                 device.address ?: "")
                             )
-                            db.bssidDAO().insert( BSSIDTable(device.address, if (device.name != null) device.name else "", BSSIDType.BLUETOOTH) )
+                            db.bssidDAO().insert( BSSIDTable(device.address, if (device.name != null) device.name else device.address, BSSIDType.BLUETOOTH) )
 
                             handler.postDelayed(endScan, 5000)
                         }

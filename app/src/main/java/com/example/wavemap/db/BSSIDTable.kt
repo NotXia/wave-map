@@ -5,7 +5,7 @@ import androidx.room.*
 enum class BSSIDType {
     WIFI, BLUETOOTH
 }
-@Entity(tableName="bssids", indices=[Index(value = ["bssid"])])
+@Entity(tableName="bssids")
 data class BSSIDTable (
     @PrimaryKey()                   val bssid : String,
     @ColumnInfo(name = "ssid")      val ssid: String,
@@ -16,6 +16,9 @@ data class BSSIDTable (
 interface BSSIDDAO {
     @Query("SELECT ssid FROM bssids WHERE bssid = :bssid")
     fun get(bssid : String) : String
+
+    @Query("SELECT * FROM bssids WHERE type = :type ORDER BY ssid")
+    fun getList(type : BSSIDType) : List<BSSIDTable>
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(bssid_entry: BSSIDTable)

@@ -53,7 +53,7 @@ class WiFiSampler : WaveSampler {
                     val timestamp = System.currentTimeMillis()
 
                     for (wifi in results) {
-                        var frequency = if (wifi.frequency >= 4900) "5Gz" else "2.4Gz"
+                        var frequency = if (wifi.frequency >= 4900) "5 Gz" else "2.4 Gz"
                         val ssid = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) wifi.wifiSsid.toString().drop(1).dropLast(1).trim() else wifi.SSID
 
                         wifi_list.add( MeasureTable(0, MeasureType.WIFI, wifi.level.toDouble(), timestamp, current_location.latitude, current_location.longitude, wifi.BSSID) )
@@ -63,7 +63,6 @@ class WiFiSampler : WaveSampler {
                     }
 
                     cont.resume( wifi_list )
-
                 }
             }
         }

@@ -3,12 +3,13 @@ package com.example.wavemap.ui.main.viewmodels
 import android.app.Application
 import androidx.room.Room
 import com.example.wavemap.R
+import com.example.wavemap.db.BSSIDType
 import com.example.wavemap.db.WaveDatabase
 import com.example.wavemap.measures.WaveSampler
 import com.example.wavemap.measures.samplers.BluetoothSampler
 import com.example.wavemap.measures.samplers.WiFiSampler
 
-class BluetoothViewModel(application : Application) : MeasureViewModel(application) {
+class BluetoothViewModel(application : Application) : QueryableMeasureViewModel(application) {
     override lateinit var sampler : WaveSampler
     override val preferences_prefix: String = "bluetooth"
     override val default_scale: Pair<Double, Double> = Pair(
@@ -23,7 +24,12 @@ class BluetoothViewModel(application : Application) : MeasureViewModel(applicati
         loadSettingsPreferences()
     }
 
-    fun changeDeviceName(device_name : String?) {
-        sampler = WiFiSampler(getApplication<Application>().applicationContext, device_name, db)
+    override fun changeQuery(new_query: String?) {
+        sampler = BluetoothSampler(getApplication<Application>().applicationContext, new_query, db)
+    }
+
+    override fun listQueries() : List<Pair<String, String>> {
+        val bt_list = db.bssidDAO().getList(BSSIDType.BLUETOOTH)
+        return bt_list.map { Pair(it.ssid, it.bssid) }
     }
 }
