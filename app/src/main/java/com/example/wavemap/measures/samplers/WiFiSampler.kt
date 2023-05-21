@@ -6,8 +6,13 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
+import android.net.*
+import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
 import android.os.Build
+import android.os.Handler
+import android.os.Looper
+import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import com.example.wavemap.db.*
 import com.example.wavemap.exceptions.MeasureException
@@ -16,11 +21,13 @@ import com.example.wavemap.measures.WaveSampler
 import com.example.wavemap.utilities.LocationUtils
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.GlobalScope
+import kotlinx.coroutines.Runnable
 import kotlinx.coroutines.launch
 import java.lang.Integer.min
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
+
 
 class WiFiSampler : WaveSampler {
     private val context : Context
@@ -33,8 +40,86 @@ class WiFiSampler : WaveSampler {
         this.db = db
     }
 
+    @RequiresApi(Build.VERSION_CODES.S)
     override suspend fun sample() : List<WaveMeasure> = suspendCoroutine { cont ->
-        val wifiManager = context.getSystemService(Context.WIFI_SERVICE) as WifiManager
+        GlobalScope.launch {
+            var measures = listOf<WaveMeasure>()
+
+            val connected_wifi = sampleCurrentlyConnectedWiFi()
+            if (connected_wifi != null) { measures = measures + listOf(connected_wifi) }
+
+            try {
+                measures = measures + sampleWithWiFiScanner()
+            }
+            catch (err : MeasureException) { /* Cannot start wifi scan */ }
+
+            if (measures.isEmpty() && connected_wifi == null) {
+                cont.resumeWithException( MeasureException("Cannot scan Wi-Fi") )
+            }
+            else {
+                cont.resume( measures )
+            }
+        }
+    }
+
+    private fun createWiFiName(ssid: String, bssid: String, frequency: Int) : String {
+        val frequency_str = if (frequency >= 4900) "5 GHz" else "2.4 GHz"
+        val ssid_normalized = ssid.replace("^\"|\"$".toRegex(), "")
+
+        return if (ssid_normalized.isNotEmpty()) {
+            "${ssid_normalized} (${frequency_str})"
+        } else {
+            "${bssid}"
+        }
+    }
+
+    private suspend fun sampleCurrentlyConnectedWiFi() : WaveMeasure? = suspendCoroutine { cont ->
+        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
+            val request = NetworkRequest.Builder().addTransportType(NetworkCapabilities.TRANSPORT_WIFI).build()
+            val connectivity_manager : ConnectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
+            val timeout_handler = Handler(Looper.getMainLooper())
+
+            val callback = object : ConnectivityManager.NetworkCallback(FLAG_INCLUDE_LOCATION_INFO) {
+                override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
+                    timeout_handler.removeCallbacksAndMessages(null)
+                    connectivity_manager.unregisterNetworkCallback(this)
+
+                    GlobalScope.launch {
+                        val wifi_info = networkCapabilities.transportInfo as WifiInfo
+                        val current_location: LatLng = LocationUtils.getCurrent(context)
+                        val timestamp = System.currentTimeMillis()
+
+                        db.bssidDAO().insert( BSSIDTable(wifi_info.bssid, createWiFiName(wifi_info.ssid, wifi_info.bssid, wifi_info.frequency), BSSIDType.WIFI) )
+                        cont.resume(
+                            MeasureTable(0, MeasureType.WIFI, wifi_info.rssi.toDouble(), timestamp, current_location.latitude, current_location.longitude, wifi_info.bssid)
+                        )
+                    }
+                }
+            }
+
+            connectivity_manager.requestNetwork(request, callback)
+            connectivity_manager.registerNetworkCallback(request, callback)
+            timeout_handler.postDelayed(Runnable {
+                try { connectivity_manager.unregisterNetworkCallback(callback) } catch (err : Exception) { /* Just in case */ }
+                try { cont.resume(null) } catch (err : Exception) { /* Just in case */ }
+            }, 3000)
+        } else {
+            GlobalScope.launch {
+                val wifi_info = (context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager).connectionInfo
+                val current_location: LatLng = LocationUtils.getCurrent(context)
+                val timestamp = System.currentTimeMillis()
+
+                db.bssidDAO().insert( BSSIDTable(wifi_info.bssid, createWiFiName(wifi_info.ssid, wifi_info.bssid, wifi_info.frequency), BSSIDType.WIFI) )
+                cont.resume(
+                    MeasureTable(0, MeasureType.WIFI, wifi_info.rssi.toDouble(), timestamp, current_location.latitude, current_location.longitude, wifi_info.bssid)
+                )
+            }
+        }
+
+    }
+
+    private suspend fun sampleWithWiFiScanner() : List<WaveMeasure> = suspendCoroutine { cont ->
+        val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
 
         val wifiScanReceiver = object : BroadcastReceiver() {
             override fun onReceive(context: Context, intent: Intent) {
@@ -53,12 +138,11 @@ class WiFiSampler : WaveSampler {
                     val timestamp = System.currentTimeMillis()
 
                     for (wifi in results) {
-                        var frequency = if (wifi.frequency >= 4900) "5 Gz" else "2.4 Gz"
                         val ssid = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) wifi.wifiSsid.toString().drop(1).dropLast(1).trim() else wifi.SSID
 
                         wifi_list.add( MeasureTable(0, MeasureType.WIFI, wifi.level.toDouble(), timestamp, current_location.latitude, current_location.longitude, wifi.BSSID) )
                         db.bssidDAO().insert(
-                            BSSIDTable(wifi.BSSID, if (ssid.isNotEmpty()) "${ssid} (${frequency})" else "${wifi.BSSID}", BSSIDType.WIFI)
+                            BSSIDTable(wifi.BSSID, createWiFiName(ssid, wifi.BSSID, wifi.frequency), BSSIDType.WIFI)
                         )
                     }
 
