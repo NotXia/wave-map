@@ -231,9 +231,9 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
 
         // Selects new tile length
         if (zoom_level < 5) {
-            tile_length_meters = 500000.0
+            tile_length_meters = 1000000.0
         }
-        else if (5 <= zoom_level && zoom_level < 21) {
+        else if (zoom_level < 21) {
             tile_length_meters = 5.0 * (2.0).pow(20.0 - round(zoom_level) + 1.0)
         }
         else {
