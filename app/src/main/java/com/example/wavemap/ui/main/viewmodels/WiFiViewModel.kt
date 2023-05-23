@@ -2,18 +2,18 @@ package com.example.wavemap.ui.main.viewmodels
 
 import android.app.Application
 import androidx.room.Room
-import com.example.wavemap.R
 import com.example.wavemap.db.BSSIDType
 import com.example.wavemap.db.WaveDatabase
 import com.example.wavemap.measures.WaveSampler
 import com.example.wavemap.measures.samplers.WiFiSampler
+import com.example.wavemap.utilities.Constants
 
 class WiFiViewModel(application : Application) : QueryableMeasureViewModel(application) {
     override lateinit var sampler : WaveSampler
     override val preferences_prefix: String = "wifi"
     override val default_scale: Pair<Double, Double> = Pair(
-        getApplication<Application>().resources.getString(R.string.wifi_default_range_bad).toDouble(),
-        getApplication<Application>().resources.getString(R.string.wifi_default_range_good).toDouble()
+        Constants.WIFI_DEFAULT_RANGE_BAD,
+        Constants.WIFI_DEFAULT_RANGE_GOOD
     )
     private val db : WaveDatabase
 
