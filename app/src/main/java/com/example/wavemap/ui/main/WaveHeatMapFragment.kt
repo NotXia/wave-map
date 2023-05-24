@@ -85,10 +85,6 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
                     updateTilesLength()
                     refreshMap()
                 }
-
-                view_model.last_measure_time.observe(viewLifecycleOwner, Observer<Long> { _ ->
-                    refreshMap()
-                })
             }
         }
     }

@@ -16,11 +16,9 @@ abstract class MeasureViewModel(application : Application) : AndroidViewModel(ap
     var values_scale : Pair<Double, Double>? = null
     var range_size : Int = Constants.RANGE_SIZE_DEFAULT
     var limit : Int? = null
-    val last_measure_time : MutableLiveData<Long> by lazy { MutableLiveData<Long>() }
 
     suspend fun measure() {
         sampler?.sampleAndStore()
-        last_measure_time.postValue(System.currentTimeMillis())
     }
 
     suspend fun averageOf(top_left_corner: LatLng, bottom_right_corner: LatLng) : Double? {
