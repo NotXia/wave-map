@@ -5,6 +5,7 @@ import androidx.lifecycle.AndroidViewModel
 import androidx.lifecycle.MutableLiveData
 import androidx.preference.PreferenceManager
 import com.example.wavemap.measures.WaveSampler
+import com.example.wavemap.utilities.Constants
 import com.google.android.gms.maps.model.LatLng
 
 abstract class MeasureViewModel(application : Application) : AndroidViewModel(application) {
@@ -13,6 +14,7 @@ abstract class MeasureViewModel(application : Application) : AndroidViewModel(ap
     abstract val default_scale : Pair<Double, Double>
 
     var values_scale : Pair<Double, Double>? = null
+    var range_size : Int = Constants.RANGE_SIZE_DEFAULT
     var limit : Int? = null
     val last_measure_time : MutableLiveData<Long> by lazy { MutableLiveData<Long>() }
 
@@ -33,5 +35,6 @@ abstract class MeasureViewModel(application : Application) : AndroidViewModel(ap
             preferences.getString("${preferences_prefix}_range_good", "${default_scale.second}")!!.toDouble()
         )
         limit = preferences.getString("${preferences_prefix}_past_limit", "1")!!.toInt()
+        range_size = preferences.getString("${preferences_prefix}_range_size", "${Constants.RANGE_SIZE_DEFAULT}")!!.toInt()
     }
 }

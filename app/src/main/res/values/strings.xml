@@ -16,6 +16,7 @@
     <string name="range_bad">Measure worst value</string>
     <string name="range_good">Measure best value</string>
     <string name="past_limit">Past measures to consider</string>
+    <string name="range_size">Number of ranges</string>
 
     <string name="filter_measures">Filter measures</string>
     <string name="remove_filter">Remove filter</string>

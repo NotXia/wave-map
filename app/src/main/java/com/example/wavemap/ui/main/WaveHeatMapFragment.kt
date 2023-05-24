@@ -28,7 +28,7 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 import kotlin.math.*
-
+import com.example.wavemap.utilities.Constants
 
 class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment() {
 
@@ -143,7 +143,8 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
         return meters * degrees_per_1_meter
     }
 
-    private fun scaleToRange(value: Double, source_range: Pair<Double, Double>, target_range: Pair<Double, Double>) : Double {
+    /* Scales the value of an interval to another */
+    private fun scaleToInterval(value: Double, source_range: Pair<Double, Double>, target_range: Pair<Double, Double>) : Double {
         var real_source = source_range
         var real_value = value
 
@@ -166,6 +167,19 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
         return ( ( ((real_value - real_source.first) * target_distance) / source_distance ) + target_range.first )
     }
 
+    /* Scales a value in a discrete interval */
+    private fun scaleToRange(value: Double, range: Pair<Double, Double>, range_size: Int) : Double {
+        if (range_size == 1) { return range.second }
+
+        val range_value : Double = round(abs(range.second - range.first) / (range_size-1))
+        var out = value + range_value/2
+        out -= out % range_value
+
+        if (out <= range.first) { return range.first }
+        if (out >= range.second) { return range.second }
+        return out
+    }
+
     private fun drawTile(top_left_corner: LatLng) {
         val top_right_corner = LatLng(top_left_corner.latitude, top_left_corner.longitude+metersToLongitudeOffset(tile_length_meters, top_left_corner.latitude))
         val bottom_right_corner = LatLng(top_left_corner.latitude-metersToLatitudeOffset(tile_length_meters), top_left_corner.longitude+metersToLongitudeOffset(tile_length_meters, top_left_corner.latitude))
@@ -177,7 +191,8 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
 
             var color = ColorUtils.setAlphaComponent(0, 0)
             if (tile_average != null) {
-                val hue = scaleToRange(tile_average!!, view_model.values_scale!!, Pair(0.0, 150.0)) // 0 -> Red | 150 -> Green
+                var hue = scaleToInterval(tile_average!!, view_model.values_scale!!, Constants.HUE_MEASURE_RANGE)
+                hue = scaleToRange(hue, Constants.HUE_MEASURE_RANGE, view_model.range_size)
                 color = ColorUtils.setAlphaComponent(ColorUtils.HSLToColor(floatArrayOf(hue.toFloat(), 1f, 0.6f)), 100);
             }
 

@@ -17,6 +17,7 @@
     <string name="range_bad">Valore misurazione pessima</string>
     <string name="range_good">Valore misurazione ottima</string>
     <string name="past_limit">Misurazioni passate da considerare</string>
+    <string name="range_size">Numero di intervalli</string>
 
     <string name="filter_measures">Filtra misure</string>
     <string name="remove_filter">Rimuovi filtro</string>
