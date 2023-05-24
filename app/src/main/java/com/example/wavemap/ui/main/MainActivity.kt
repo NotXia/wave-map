@@ -97,8 +97,10 @@ class MainActivity : AppCompatActivity() {
         fab_start_measure.setOnClickListener {
             lifecycleScope.launch(Dispatchers.IO) {
                 try {
+                    withContext(Dispatchers.Main) { fab_start_measure.isClickable = false }
                     curr_model.measure()
                     withContext(Dispatchers.Main) { map_fragment.refreshMap() }
+                    withContext(Dispatchers.Main) { fab_start_measure.isClickable = true }
                 } catch (err: Exception) {
                     withContext(Dispatchers.Main) {
                         // TODO Error handling
