@@ -8,6 +8,7 @@
 \emergencystretch=\maxdimen
 \hyphenpenalty=10000
 \hbadness=10000
+\setlength\parindent{0pt}
 
 \begin{document}
 \begin{titlepage}
@@ -52,13 +53,46 @@
 
 \pagenumbering{arabic}
 
+
 \section{Introduzione}
+
 
 \section{Scelte progettuali}
 
+\subsection{Informazioni generali}
+
+
+
 \subsection{Mappa}
 
-\subsection{Sampler}
+
+
+\subsection{Raccolta dei dati}
+
+\subsubsection{Struttura e memorizzazione delle misurazioni}
+Una misurazione è descritta dall'interfaccia \texttt{WaveMeasure} e contiene il valore della misurazione, un timestamp e la posizione. 
+In aggiunta, è presente un campo per informazioni aggiuntive utile per distinguere alcune tipologie di misurazioni (es. per Wi-Fi e Bluetooth viene salvato il BSSID).
+
+L'interfaccia \texttt{WaveMeasure} viene quindi utilizzata per implementare la classe \texttt{MeasureTable} che descrive la tabella del database dedicata per memorizzare le misurazioni. 
+Tutte le misurazioni sono salvate nella stessa tabella e sono differenziate da un campo \texttt{type}.
+
+
+\subsubsection{Sampler}
+Per la raccolta dei dati è stato introdotto il concetto di \textit{sampler} per gestisce in maniera modulare le misurazioni.
+Nello specifico, un \textit{sampler} è descritto dalla classe astratta \texttt{WaveSampler} e richiede l'implementazione dei seguenti metodi:
+\begin{itemize}
+    \item \texttt{sample} per prendere una nuova misurazione
+    \item \texttt{store} per il salvataggio dei dati nel database
+    \item \texttt{retrieve} per la ricerca dei dati note le coordinate dei vertici di una cella della mappa
+\end{itemize}
+Inoltre, sono esposte le seguenti funzioni ausiliarie:
+\begin{itemize}
+    \item \texttt{average} richiama \texttt{retrieve} e restituisce la media dei valori
+    \item \texttt{sampleAndStore} richiama in sequenza \texttt{sample} e \texttt{store}
+\end{itemize}
+Per maggiore flessibilità, le misure vengono sempre intese come liste di \texttt{WaveMeasure}. Ciò permette di gestire misurazioni che per loro natura non generano un'unica misurazione (es. Wi-Fi e Bluetooth).
+
+A partire da \texttt{WaveSampler} sono quindi implementati i \textit{sampler} per Wi-Fi, Bluetooth, LTE e suono.
 
 
 \end{document}
