@@ -5,6 +5,7 @@ import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.pm.PackageManager
 import android.graphics.Color
+import android.location.Location
 import android.os.Bundle
 import android.os.Looper
 import android.view.LayoutInflater
@@ -13,6 +14,7 @@ import android.view.ViewGroup
 import androidx.core.content.ContextCompat
 import androidx.core.graphics.ColorUtils
 import androidx.fragment.app.Fragment
+import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import com.example.wavemap.R
@@ -37,6 +39,10 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
     private var tile_length_meters = 500.0
     private lateinit var center : LatLng
     private lateinit var top_left_center : LatLng
+
+    val current_tile: MutableLiveData<LatLng> by lazy {
+        MutableLiveData<LatLng>()
+    }
 
     fun changeViewModel(view_model : MeasureViewModel) {
         this.view_model = view_model
@@ -100,7 +106,16 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
                 setWaitForAccurateLocation(true)
             }.build()
             val location_callback = object : LocationCallback() {
-                override fun onLocationResult(locationResult: LocationResult) { }
+                override fun onLocationResult(locationResult: LocationResult) {
+                    if (locationResult.lastLocation == null) { return }
+
+                    val location = locationResult.lastLocation as Location
+                    val tile = getReferenceTileContaining(LatLng(location.latitude, location.longitude))
+
+                    if (current_tile.value != tile) {
+                        current_tile.value = tile
+                    }
+                }
             }
             val fused_location_provider = LocationServices.getFusedLocationProviderClient(requireActivity())
 
@@ -213,18 +228,7 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
         val top_left_visible = LatLng(google_map.projection.visibleRegion.latLngBounds.northeast.latitude, google_map.projection.visibleRegion.latLngBounds.southwest.longitude)
         val bottom_right_visible = LatLng(google_map.projection.visibleRegion.latLngBounds.southwest.latitude, google_map.projection.visibleRegion.latLngBounds.northeast.longitude)
 
-        // Difference from the current top-left corner and the center
-        val lat_diff_to_center = top_left_visible.latitude - top_left_center.latitude
-        val lon_diff_to_center = top_left_visible.longitude - top_left_center.longitude
-        // Number of tiles to skip with respect to latitude and longitude (with one extra tile for tolerance)
-        var lat_offset_times = ceil( (lat_diff_to_center / metersToLatitudeOffset(tile_length_meters)) + 1 )
-        var lon_offset_times = floor( (lon_diff_to_center / metersToLongitudeOffset(tile_length_meters, top_left_visible.latitude)) - 1 )
-
-        // Top-left corner from which begin the generation of tiles
-        val real_top_left_corner = LatLng(
-            top_left_center.latitude + (metersToLatitudeOffset(tile_length_meters * lat_offset_times)),
-            top_left_center.longitude + (metersToLongitudeOffset(tile_length_meters * lon_offset_times, top_left_visible.latitude))
-        )
+        val real_top_left_corner = getReferenceTileContaining(top_left_visible)
 
         // Fill the screen with tiles
         var current_tile = real_top_left_corner
@@ -235,6 +239,22 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
             }
             current_tile = LatLng( current_tile.latitude - metersToLatitudeOffset(tile_length_meters), real_top_left_corner.longitude )
         }
+    }
+
+    private fun getReferenceTileContaining(position: LatLng) : LatLng {
+        // Difference from the current top-left corner and the center
+        val lat_diff_to_center = position.latitude - top_left_center.latitude
+        val lon_diff_to_center = position.longitude - top_left_center.longitude
+
+        // Number of tiles to skip with respect to latitude and longitude
+        var lat_offset_times = ceil( (lat_diff_to_center / metersToLatitudeOffset(tile_length_meters)) )
+        var lon_offset_times = floor( (lon_diff_to_center / metersToLongitudeOffset(tile_length_meters, position.latitude)) )
+
+        // Top-left corner from which begin the generation of tiles
+        return LatLng(
+            top_left_center.latitude + (metersToLatitudeOffset(tile_length_meters * lat_offset_times)),
+            top_left_center.longitude + (metersToLongitudeOffset(tile_length_meters * lon_offset_times, position.latitude))
+        )
     }
 
     private fun updateTilesLength() {

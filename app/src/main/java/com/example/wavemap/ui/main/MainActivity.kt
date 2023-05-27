@@ -15,10 +15,12 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.commit
+import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import com.example.wavemap.R
 import com.example.wavemap.ui.main.viewmodels.*
 import com.example.wavemap.ui.settings.SettingsActivity
+import com.google.android.gms.maps.model.LatLng
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -31,16 +33,18 @@ class MainActivity : AppCompatActivity() {
     private lateinit var curr_model : MeasureViewModel
     private lateinit var map_fragment : WaveHeatMapFragment
 
+    private val wifi_model : WiFiViewModel by viewModels()
+    private val lte_model : LTEViewModel by viewModels()
+    private val noise_model : NoiseViewModel by viewModels()
+    private val bluetooth_model : BluetoothViewModel by viewModels()
+
+    private lateinit var available_viewmodels : Array<Pair<String, MeasureViewModel>>
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_main)
 
-        val wifi_model : WiFiViewModel by viewModels()
-        val lte_model : LTEViewModel by viewModels()
-        val noise_model : NoiseViewModel by viewModels()
-        val bluetooth_model : BluetoothViewModel by viewModels()
-
-        val spinner_options = arrayOf(
+        available_viewmodels = arrayOf(
             Pair(resources.getString(R.string.wifi), wifi_model),
             Pair(resources.getString(R.string.lte), lte_model),
             Pair(resources.getString(R.string.noise), noise_model),
@@ -75,13 +79,13 @@ class MainActivity : AppCompatActivity() {
 
 
         // Measure type spinner
-        measure_spinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, spinner_options.map{ it.first })
+        measure_spinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, available_viewmodels.map{ it.first })
         measure_spinner.setSelection(0, false) // Selects the first element of the spinner (before adding the listener)
         measure_spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener{
             override fun onNothingSelected(parent: AdapterView<*>?) { }
 
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                curr_model = spinner_options[position].second
+                curr_model = available_viewmodels[position].second
                 map_fragment.changeViewModel(curr_model)
 
                 if (curr_model is QueryableMeasureViewModel) {
@@ -115,7 +119,7 @@ class MainActivity : AppCompatActivity() {
             if (curr_model !is QueryableMeasureViewModel) { return@setOnClickListener }
             val queryable_model = curr_model as QueryableMeasureViewModel
 
-            GlobalScope.launch {
+            lifecycleScope.launch {
                 val queries = ( listOf(Pair(getString(R.string.remove_filter), null)) + queryable_model.listQueries() )
                 val items : Array<CharSequence> = queries.map{ it.first }.toTypedArray()
 
@@ -131,6 +135,14 @@ class MainActivity : AppCompatActivity() {
                 }
             }
         }
+
+        map_fragment.current_tile.observe(this, Observer<LatLng> { new_tile ->
+            GlobalScope.launch {
+                curr_model.measure()
+                withContext(Dispatchers.Main) { map_fragment.refreshMap() }
+            }
+        })
+
     }
 
     override fun onResume() {
