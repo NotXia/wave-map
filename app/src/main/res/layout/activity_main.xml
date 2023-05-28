@@ -31,6 +31,7 @@
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="16dp"
         android:clickable="true"
+        app:backgroundTint="?android:colorPrimary"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
         app:srcCompat="@android:drawable/ic_input_add" />
@@ -42,10 +43,11 @@
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="12dp"
         android:clickable="true"
+        android:visibility="invisible"
+        app:backgroundTint="?android:colorPrimary"
         app:layout_constraintBottom_toTopOf="@+id/btn_scan"
         app:layout_constraintEnd_toEndOf="parent"
-        app:srcCompat="@android:drawable/ic_menu_search"
-        android:visibility="invisible" />
+        app:srcCompat="@android:drawable/ic_menu_search" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
