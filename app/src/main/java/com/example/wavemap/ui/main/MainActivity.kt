@@ -133,7 +133,7 @@ class MainActivity : AppCompatActivity() {
                 if (curr_model !is QueryableMeasureViewModel) { return@setOnClickListener }
                 val queryable_model = curr_model as QueryableMeasureViewModel
 
-                lifecycleScope.launch {
+                GlobalScope.launch {
                     val queries = ( listOf(Pair(getString(R.string.remove_filter), null)) + queryable_model.listQueries() )
                     val items : Array<CharSequence> = queries.map{ it.first }.toTypedArray()
 
