@@ -8,6 +8,8 @@
     <string name="noise">Suono</string>
     <string name="bluetooth">Bluetooth</string>
 
+    <string name="sampler_settings">Opzioni misuratori</string>
+    <string name="scan_settings">Opzioni scansione</string>
     <string name="settings">Impostazioni</string>
     <string name="wifi_settings">Impostazioni Wi-Fi</string>
     <string name="lte_settings">Impostazioni LTE</string>
@@ -21,5 +23,11 @@
 
     <string name="filter_measures">Filtra misure</string>
     <string name="remove_filter">Rimuovi filtro</string>
+
+    <string name="periodic_measure">Abilita scansioni periodiche</string>
+    <string name="periodic_measure_desc">Esegui scansioni periodiche quando l\'app è attiva</string>
+
+    <string name="periodic_measure_interval">Intervallo scansioni (in secondi)</string>
+
 
 </resources>

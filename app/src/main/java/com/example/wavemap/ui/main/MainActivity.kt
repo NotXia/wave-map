@@ -8,6 +8,8 @@ import android.content.Intent
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.os.Bundle
+import android.os.Handler
+import android.os.Looper
 import android.util.Log
 import android.util.TypedValue
 import android.view.Menu
@@ -23,6 +25,7 @@ import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.commit
 import androidx.lifecycle.lifecycleScope
+import androidx.preference.PreferenceManager
 import com.example.wavemap.R
 import com.example.wavemap.ui.main.viewmodels.*
 import com.example.wavemap.ui.settings.SettingsActivity
@@ -56,6 +59,8 @@ class MainActivity : AppCompatActivity() {
     private lateinit var fab_query : FloatingActionButton
 
     private var fab_start_measure_loading_anim : ValueAnimator? = null
+
+    private var periodic_scan_handler : Handler = Handler(Looper.getMainLooper())
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -116,16 +121,8 @@ class MainActivity : AppCompatActivity() {
 
             // New measurement fab
             fab_start_measure.setOnClickListener {
-                GlobalScope.launch {
-                    try {
-                        measureAll()
-                    } catch (err: Exception) {
-                        // TODO Error handling
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(baseContext, ":(", Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                }
+                userTriggeredMeasure()
+                resetPeriodicScan()
             }
 
             // Filter measures
@@ -152,15 +149,11 @@ class MainActivity : AppCompatActivity() {
 
             // Measure on tile change
             map_fragment.current_tile.observe(this) { new_tile ->
-                GlobalScope.launch {
-                    try {
-                        measureAll()
-                    } catch (err: Exception) {
-                        // TODO Error handling
-                        Log.e("measure", "Tile change measure")
-                    }
-                }
+                autoTriggeredMeasure()
+                resetPeriodicScan()
             }
+
+            startPeriodicScan()
 
         }.launch(
             arrayOf(
@@ -265,7 +258,47 @@ class MainActivity : AppCompatActivity() {
             fab_start_measure_loading_anim = null
         }
         fab_start_measure.setImageResource(android.R.drawable.ic_input_add)
-
     }
 
+
+    private fun userTriggeredMeasure() {
+        GlobalScope.launch {
+            try {
+                measureAll()
+            } catch (err: Exception) {
+                // TODO Error handling
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(baseContext, ":(", Toast.LENGTH_SHORT).show()
+                }
+                Log.e("measure", "User triggered measure $err")
+            }
+        }
+    }
+
+    private fun autoTriggeredMeasure() {
+        GlobalScope.launch {
+            try {
+                measureAll()
+            } catch (err: Exception) {
+                Log.e("measure", "Auto triggered measure $err")
+            }
+        }
+    }
+
+    private fun startPeriodicScan() {
+        val pref_manager = PreferenceManager.getDefaultSharedPreferences(baseContext)
+        if (pref_manager.getBoolean("periodic_scan", false)) {
+            val delay = pref_manager.getString("periodic_scan_interval", "60")!!.toLong()
+
+            periodic_scan_handler.postDelayed({
+                autoTriggeredMeasure()
+                resetPeriodicScan()
+            }, delay * 1000)
+        }
+    }
+
+    private fun resetPeriodicScan() {
+        periodic_scan_handler.removeCallbacksAndMessages(null)
+        startPeriodicScan()
+    }
 }

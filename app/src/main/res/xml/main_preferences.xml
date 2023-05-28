@@ -1,20 +1,43 @@
 <?xml version="1.0" encoding="utf-8"?>
-<PreferenceScreen xmlns:app="http://schemas.android.com/apk/res-auto">
+<PreferenceScreen xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto">
 
-    <Preference
-        app:fragment="com.example.wavemap.ui.settings.sections.WiFiSettingsFragment"
-        app:title="@string/wifi_settings" />
+    <PreferenceCategory
+        android:layout_width="wrap_content"
+        android:layout_height="wrap_content"
+        android:title="@string/sampler_settings">
 
-    <Preference
-        app:fragment="com.example.wavemap.ui.settings.sections.LTESettingsFragment"
-        app:title="@string/lte_settings" />
+        <Preference
+            app:fragment="com.example.wavemap.ui.settings.sections.NoiseSettingsFragment"
+            app:title="@string/noise_settings" />
+        <Preference
+            app:fragment="com.example.wavemap.ui.settings.sections.WiFiSettingsFragment"
+            app:title="@string/wifi_settings" />
+        <Preference
+            app:fragment="com.example.wavemap.ui.settings.sections.BluetoothSettingsFragment"
+            app:title="@string/bluetooth_settings" />
+        <Preference
+            app:fragment="com.example.wavemap.ui.settings.sections.LTESettingsFragment"
+            app:title="@string/lte_settings" />
 
-    <Preference
-        app:fragment="com.example.wavemap.ui.settings.sections.NoiseSettingsFragment"
-        app:title="@string/noise_settings" />
+    </PreferenceCategory>
 
-    <Preference
-        app:fragment="com.example.wavemap.ui.settings.sections.BluetoothSettingsFragment"
-        app:title="@string/bluetooth_settings" />
+
+    <PreferenceCategory android:title="@string/scan_settings">
+
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="periodic_scan"
+            android:title="@string/periodic_measure"
+            android:summary="@string/periodic_measure_desc"/>
+        <EditTextPreference
+            android:defaultValue="60"
+            android:key="periodic_scan_interval"
+            android:selectAllOnFocus="true"
+            android:singleLine="true"
+            android:title="@string/periodic_measure_interval"
+            android:dependency="periodic_scan" />
+
+    </PreferenceCategory>
 
 </PreferenceScreen>
