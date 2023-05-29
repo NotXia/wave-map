@@ -172,10 +172,16 @@ class MainActivity : AppCompatActivity() {
         try {
             curr_model.loadSettingsPreferences()
             map_fragment.refreshMap()
+            startPeriodicScan()
         }
         catch (err : Exception) {
             // TODO: Handle error
         }
+    }
+
+    override fun onPause() {
+        super.onPause()
+        stopPeriodicScan()
     }
 
 
@@ -297,8 +303,12 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun resetPeriodicScan() {
+    private fun stopPeriodicScan() {
         periodic_scan_handler.removeCallbacksAndMessages(null)
+    }
+
+    private fun resetPeriodicScan() {
+        stopPeriodicScan()
         startPeriodicScan()
     }
 }
