@@ -28,8 +28,8 @@
         <CheckBoxPreference
             android:defaultValue="true"
             android:key="periodic_scan"
-            android:title="@string/periodic_measure"
-            android:summary="@string/periodic_measure_desc"/>
+            android:summary="@string/periodic_measure_desc"
+            android:title="@string/periodic_measure" />
         <EditTextPreference
             android:defaultValue="60"
             android:key="periodic_scan_interval"
@@ -37,6 +37,11 @@
             android:singleLine="true"
             android:title="@string/periodic_measure_interval"
             android:dependency="periodic_scan" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="background_scan"
+            android:title="@string/background_measure"
+            app:summary="@string/background_measure_desc" />
 
     </PreferenceCategory>
 

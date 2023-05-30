@@ -26,8 +26,9 @@
 
     <string name="periodic_measure">Abilita scansioni periodiche</string>
     <string name="periodic_measure_desc">Esegui scansioni periodiche quando l\'app è attiva</string>
-
     <string name="periodic_measure_interval">Intervallo scansioni (in secondi)</string>
+    <string name="background_measure">Abilita scansioni in background</string>
+    <string name="background_measure_desc">Effettua periodicamente delle scansioni quando l\'app è chiusa</string>
 
 
 </resources>

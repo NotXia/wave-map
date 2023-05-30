@@ -5,6 +5,7 @@ import android.animation.Animator
 import android.animation.Animator.AnimatorListener
 import android.animation.ValueAnimator
 import android.content.Intent
+import android.content.SharedPreferences
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.os.Bundle
@@ -24,11 +25,11 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.commit
-import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import com.example.wavemap.R
 import com.example.wavemap.ui.main.viewmodels.*
 import com.example.wavemap.ui.settings.SettingsActivity
+import com.example.wavemap.services.BackgroundScanService
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -46,6 +47,8 @@ class MainActivity : AppCompatActivity() {
 
     private lateinit var curr_model : MeasureViewModel
     private lateinit var map_fragment : WaveHeatMapFragment
+    private lateinit var pref_manager : SharedPreferences
+
 
     private val wifi_model : WiFiViewModel by viewModels()
     private val lte_model : LTEViewModel by viewModels()
@@ -81,6 +84,7 @@ class MainActivity : AppCompatActivity() {
         curr_model = wifi_model
         map_fragment = WaveHeatMapFragment(curr_model)
 
+        pref_manager = PreferenceManager.getDefaultSharedPreferences(baseContext)
 
         registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { is_granted: Map<String, Boolean> ->
             if (!is_granted.values.all{ granted -> granted }) {
@@ -160,7 +164,7 @@ class MainActivity : AppCompatActivity() {
                 Manifest.permission.ACCESS_FINE_LOCATION,
                 Manifest.permission.RECORD_AUDIO,
                 Manifest.permission.BLUETOOTH_SCAN,
-                Manifest.permission.BLUETOOTH_CONNECT
+                Manifest.permission.BLUETOOTH_CONNECT,
             )
         )
 
@@ -173,8 +177,10 @@ class MainActivity : AppCompatActivity() {
             curr_model.loadSettingsPreferences()
             map_fragment.refreshMap()
             startPeriodicScan()
+            BackgroundScanService.stop(this)
         }
         catch (err : Exception) {
+            Log.e("resume", "$err")
             // TODO: Handle error
         }
     }
@@ -182,8 +188,8 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         stopPeriodicScan()
+        BackgroundScanService.start(this)
     }
-
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
         super.onCreateOptionsMenu(menu)
@@ -292,7 +298,6 @@ class MainActivity : AppCompatActivity() {
     }
 
     private fun startPeriodicScan() {
-        val pref_manager = PreferenceManager.getDefaultSharedPreferences(baseContext)
         if (pref_manager.getBoolean("periodic_scan", false)) {
             val delay = pref_manager.getString("periodic_scan_interval", "60")!!.toLong()
 
