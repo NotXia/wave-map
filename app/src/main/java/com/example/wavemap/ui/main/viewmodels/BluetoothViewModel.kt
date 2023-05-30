@@ -18,7 +18,7 @@ class BluetoothViewModel(application : Application) : QueryableMeasureViewModel(
     private val db : WaveDatabase
 
     init {
-        db = Room.databaseBuilder(application.applicationContext, WaveDatabase::class.java, "wave").build()
+        db = Room.databaseBuilder(application.applicationContext, WaveDatabase::class.java, Constants.DATABASE_NAME).build()
         sampler = BluetoothSampler(application.applicationContext, null, db)
         loadSettingsPreferences()
     }

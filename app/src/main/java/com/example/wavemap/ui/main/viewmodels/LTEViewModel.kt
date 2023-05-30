@@ -17,7 +17,7 @@ class LTEViewModel(application : Application) : MeasureViewModel(application) {
     private val db : WaveDatabase
 
     init {
-        db = Room.databaseBuilder(application.applicationContext, WaveDatabase::class.java, "wave").build()
+        db = Room.databaseBuilder(application.applicationContext, WaveDatabase::class.java, Constants.DATABASE_NAME).build()
         sampler = LTESampler(application.applicationContext, db)
         loadSettingsPreferences()
     }

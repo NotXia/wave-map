@@ -17,5 +17,7 @@ class Constants {
         val HUE_MEASURE_RANGE = Pair(0.0, 150.0) // 0 -> Red | 150 -> Green
 
         const val RANGE_SIZE_DEFAULT : Int = 3
+
+        const val DATABASE_NAME = "wave"
     }
 }
