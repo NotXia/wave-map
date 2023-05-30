@@ -151,10 +151,12 @@ class MainActivity : AppCompatActivity() {
                 }
             }
 
-            // Measure on tile change
+            // Listen for tile changes
             map_fragment.current_tile.observe(this) { new_tile ->
-                autoTriggeredMeasure()
-                resetPeriodicScan()
+                if (pref_manager.getBoolean("tile_change_scan", false)) {
+                    autoTriggeredMeasure()
+                    resetPeriodicScan()
+                }
             }
 
             startPeriodicScan()

@@ -26,7 +26,7 @@
     <PreferenceCategory android:title="@string/scan_settings">
 
         <CheckBoxPreference
-            android:defaultValue="true"
+            android:defaultValue="false"
             android:key="periodic_scan"
             android:summary="@string/periodic_measure_desc"
             android:title="@string/periodic_measure" />
@@ -37,6 +37,11 @@
             android:singleLine="true"
             android:title="@string/periodic_measure_interval"
             android:dependency="periodic_scan" />
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="tile_change_scan"
+            android:title="@string/measure_on_tile_change"
+            app:summary="@string/measure_on_tile_change_desc" />
         <CheckBoxPreference
             android:defaultValue="false"
             android:key="background_scan"

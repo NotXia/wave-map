@@ -26,6 +26,8 @@
     <string name="periodic_measure">Enable periodic scans</string>
     <string name="periodic_measure_desc">Periodically scan when the application is active</string>
     <string name="periodic_measure_interval">Scan time interval (in seconds)</string>
+    <string name="measure_on_tile_change">Enable auto tile scan</string>
+    <string name="measure_on_tile_change_desc">Automatically scan when moving between tiles</string>
     <string name="background_measure">Enable background scans</string>
     <string name="background_measure_desc">Periodically scan when the application is closed</string>
 
