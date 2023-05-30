@@ -31,6 +31,8 @@ import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 import kotlin.math.*
 import com.example.wavemap.utilities.Constants
+import com.example.wavemap.utilities.LocationUtils.Companion.metersToLatitudeOffset
+import com.example.wavemap.utilities.LocationUtils.Companion.metersToLongitudeOffset
 
 class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment() {
 
@@ -141,17 +143,6 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
                 )
             }
         }
-    }
-
-    private fun metersToLatitudeOffset(meters: Double) : Double {
-        val degrees_per_1_meter = 1.0/111320.0
-        return meters * degrees_per_1_meter
-    }
-
-    private fun metersToLongitudeOffset(meters: Double, latitude: Double) : Double {
-        // val degrees_per_1_meter = 1.0/(40075000.0 * cos(latitude) / 360)
-        val degrees_per_1_meter = 1.0/(40075000.0 * cos(0.0) / 360)
-        return meters * degrees_per_1_meter
     }
 
     /* Scales the value of an interval to another */
