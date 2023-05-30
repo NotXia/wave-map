@@ -24,12 +24,10 @@ import kotlin.coroutines.suspendCoroutine
 class LTESampler : WaveSampler {
     private val context : Context
     private val db : WaveDatabase
-    private var sample_time : Int
 
-    constructor(context: Context, db: WaveDatabase, sample_time: Int=5) {
+    constructor(context: Context, db: WaveDatabase) {
         this.context = context
         this.db = db
-        this.sample_time = sample_time
     }
 
     override suspend fun sample() : List<WaveMeasure> = suspendCoroutine { cont ->
