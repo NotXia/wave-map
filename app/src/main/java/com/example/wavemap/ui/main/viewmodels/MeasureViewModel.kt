@@ -12,6 +12,7 @@ abstract class MeasureViewModel(application : Application) : AndroidViewModel(ap
     abstract var sampler : WaveSampler
     abstract val preferences_prefix : String
     abstract val default_scale : Pair<Double, Double>
+    abstract val measure_unit : String
 
     var values_scale : Pair<Double, Double>? = null
     var range_size : Int = Constants.RANGE_SIZE_DEFAULT

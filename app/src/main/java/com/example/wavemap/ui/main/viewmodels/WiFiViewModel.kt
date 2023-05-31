@@ -15,6 +15,7 @@ class WiFiViewModel(application : Application) : QueryableMeasureViewModel(appli
         Constants.WIFI_DEFAULT_RANGE_BAD,
         Constants.WIFI_DEFAULT_RANGE_GOOD
     )
+    override val measure_unit = "dBm"
     private val db : WaveDatabase
 
     init {

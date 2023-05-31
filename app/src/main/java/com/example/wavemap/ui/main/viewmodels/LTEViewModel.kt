@@ -14,6 +14,7 @@ class LTEViewModel(application : Application) : MeasureViewModel(application) {
         Constants.LTE_DEFAULT_RANGE_BAD,
         Constants.LTE_DEFAULT_RANGE_GOOD
     )
+    override val measure_unit = "dBm"
     private val db : WaveDatabase
 
     init {

@@ -15,6 +15,7 @@ class BluetoothViewModel(application : Application) : QueryableMeasureViewModel(
         Constants.BLUETOOTH_DEFAULT_RANGE_BAD,
         Constants.BLUETOOTH_DEFAULT_RANGE_GOOD
     )
+    override val measure_unit = "dBm"
     private val db : WaveDatabase
 
     init {

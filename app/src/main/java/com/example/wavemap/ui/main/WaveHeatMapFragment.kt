@@ -4,7 +4,10 @@ import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
 import android.content.pm.PackageManager
+import android.graphics.Bitmap
+import android.graphics.Canvas
 import android.graphics.Color
+import android.graphics.Paint
 import android.location.Location
 import android.os.Bundle
 import android.os.Looper
@@ -15,11 +18,13 @@ import androidx.core.content.ContextCompat
 import androidx.core.graphics.ColorUtils
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.MutableLiveData
-import androidx.lifecycle.Observer
 import androidx.lifecycle.lifecycleScope
 import com.example.wavemap.R
 import com.example.wavemap.ui.main.viewmodels.MeasureViewModel
+import com.example.wavemap.utilities.Constants
 import com.example.wavemap.utilities.LocationUtils
+import com.example.wavemap.utilities.LocationUtils.Companion.metersToLatitudeOffset
+import com.example.wavemap.utilities.LocationUtils.Companion.metersToLongitudeOffset
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -30,9 +35,7 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 import kotlin.math.*
-import com.example.wavemap.utilities.Constants
-import com.example.wavemap.utilities.LocationUtils.Companion.metersToLatitudeOffset
-import com.example.wavemap.utilities.LocationUtils.Companion.metersToLongitudeOffset
+
 
 class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment() {
 
@@ -41,6 +44,8 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
     private var tile_length_meters = 500.0
     private lateinit var center : LatLng
     private lateinit var top_left_center : LatLng
+
+    private var markers : MutableList<Marker> = mutableListOf() // Markers containing tile labels
 
     val current_tile: MutableLiveData<LatLng> by lazy {
         MutableLiveData<LatLng>()
@@ -88,6 +93,11 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
                 google_map.isMyLocationEnabled = true;
                 google_map.moveCamera(CameraUpdateFactory.newLatLngZoom(current_location, 18f))
                 center = current_location
+
+                google_map.setOnCameraMoveListener {
+                    markers.forEach { it.remove() }
+                    markers = mutableListOf()
+                }
 
                 google_map.setOnCameraIdleListener {
                     updateTilesLength()
@@ -205,8 +215,32 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
                         .fillColor(color)
                         .strokeWidth(1.2f)
                         .strokeColor(Color.argb(50, 0, 0, 0))
-                        .add( top_left_corner,  top_right_corner,  bottom_right_corner,  bottom_left_corner )
+                        .add(top_left_corner, top_right_corner, bottom_right_corner, bottom_left_corner)
                 )
+
+                // Adds a label with the value to the tile
+                if (tile_average != null) {
+                    val text = "${tile_average.toInt()} ${view_model.measure_unit}"
+                    val textPaint = Paint()
+                    textPaint.textSize = 30f
+                    val width = textPaint.measureText(text)
+                    val height = textPaint.textSize
+
+                    // Put the text only if there is enough space
+                    if (google_map.projection.toScreenLocation(top_right_corner).x - google_map.projection.toScreenLocation(top_left_corner).x > width) {
+                        val image = Bitmap.createBitmap(width.toInt(), height.toInt(), Bitmap.Config.ARGB_8888)
+                        val canvas = Canvas(image)
+                        canvas.drawText(text, 0f, canvas.height.toFloat(), textPaint)
+
+                        val marker = google_map.addMarker(
+                            MarkerOptions()
+                                .position(top_right_corner)
+                                .icon(BitmapDescriptorFactory.fromBitmap(image))
+                                .anchor(1f, 0f)
+                        )
+                        if (marker != null) { markers.add(marker) }
+                    }
+                }
             }
         }
     }

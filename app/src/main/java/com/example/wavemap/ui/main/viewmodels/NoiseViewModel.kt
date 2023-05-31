@@ -14,6 +14,7 @@ class NoiseViewModel(application : Application) : MeasureViewModel(application) 
         Constants.NOISE_DEFAULT_RANGE_BAD,
         Constants.NOISE_DEFAULT_RANGE_GOOD
     )
+    override val measure_unit = "dB"
     private val db : WaveDatabase
 
     init {
