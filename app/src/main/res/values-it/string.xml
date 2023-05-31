@@ -11,6 +11,7 @@
     <string name="sampler_settings">Opzioni misuratori</string>
     <string name="scan_settings">Opzioni scansione</string>
     <string name="notification_settings">Notifiche</string>
+    <string name="map_settings">Optioni mappa</string>
     <string name="settings">Impostazioni</string>
     <string name="wifi_settings">Impostazioni Wi-Fi</string>
     <string name="lte_settings">Impostazioni LTE</string>
@@ -34,6 +35,8 @@
     <string name="background_measure_desc">Effettua periodicamente delle scansioni quando l\'app è chiusa</string>
     <string name="notify_uncovered_area">Notifica area scoperta</string>
     <string name="notify_uncovered_area_desc">Invia una notifica quando si entra in un\'area scoperta da misurazioni</string>
+    <string name="tile_label">Valore delle caselle</string>
+    <string name="tile_label_desc">Visualizza il valore delle celle</string>
 
     <string name="notification_uncovered_area">Area scoperta</string>
     <string name="notification_uncovered_area_desc">Notifica quando si entra in un\'area scoperta da misurazioni</string>

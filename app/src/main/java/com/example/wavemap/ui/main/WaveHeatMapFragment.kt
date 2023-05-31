@@ -3,6 +3,7 @@ package com.example.wavemap.ui.main
 import android.Manifest
 import android.annotation.SuppressLint
 import android.app.Activity
+import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
 import android.graphics.Canvas
@@ -19,6 +20,7 @@ import androidx.core.graphics.ColorUtils
 import androidx.fragment.app.Fragment
 import androidx.lifecycle.MutableLiveData
 import androidx.lifecycle.lifecycleScope
+import androidx.preference.PreferenceManager
 import com.example.wavemap.R
 import com.example.wavemap.ui.main.viewmodels.MeasureViewModel
 import com.example.wavemap.utilities.Constants
@@ -42,6 +44,7 @@ import kotlin.math.*
 class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment() {
 
     private lateinit var google_map : GoogleMap
+    private lateinit var pref_manager : SharedPreferences
 
     private var tile_length_meters = 500.0
     private lateinit var center : LatLng
@@ -77,6 +80,8 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
 
     override fun onViewCreated(view: View, savedInstanceState: Bundle?) {
         super.onViewCreated(view, savedInstanceState)
+
+        pref_manager = PreferenceManager.getDefaultSharedPreferences(requireContext())
 
         val mapFragment = childFragmentManager.findFragmentById(R.id.wave_map) as SupportMapFragment?
         mapFragment?.getMapAsync { google_map ->
@@ -230,7 +235,7 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
                 )
 
                 // Adds a label with the value to the tile
-                if (tile_average != null) {
+                if (tile_average != null && pref_manager.getBoolean("show_tile_label", true)) {
                     val text = "${tile_average.toInt()} ${view_model.measure_unit}"
                     val textPaint = Paint()
                     textPaint.textSize = 30f

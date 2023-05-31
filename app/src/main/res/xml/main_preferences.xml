@@ -23,6 +23,14 @@
     </PreferenceCategory>
 
 
+    <PreferenceCategory android:title="@string/map_settings">
+
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="show_tile_label"
+            android:title="@string/tile_label"
+            app:summary="@string/tile_label_desc" />
+    </PreferenceCategory>
     <PreferenceCategory android:title="@string/scan_settings">
 
         <CheckBoxPreference
@@ -51,11 +59,11 @@
     </PreferenceCategory>
     <PreferenceCategory android:title="@string/notification_settings">
 
+        <CheckBoxPreference
+            android:defaultValue="false"
+            android:key="notify_uncovered_area"
+            android:title="@string/notify_uncovered_area"
+            app:summary="@string/notify_uncovered_area_desc" />
     </PreferenceCategory>
-    <CheckBoxPreference
-        android:defaultValue="false"
-        android:key="notify_uncovered_area"
-        android:title="@string/notify_uncovered_area"
-        app:summary="@string/notify_uncovered_area_desc" />
 
 </PreferenceScreen>
