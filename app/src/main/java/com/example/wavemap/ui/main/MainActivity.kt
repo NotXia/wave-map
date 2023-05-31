@@ -25,6 +25,7 @@ import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.fragment.app.commit
+import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import com.example.wavemap.R
 import com.example.wavemap.ui.main.viewmodels.*
@@ -104,7 +105,9 @@ class MainActivity : AppCompatActivity() {
 
                 override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                     curr_model = available_samplers[position].view_model
-                    map_fragment.changeViewModel(curr_model)
+                    lifecycleScope.launch {
+                        map_fragment.changeViewModel(curr_model)
+                    }
 
                     if (curr_model is QueryableMeasureViewModel) {
                         fab_query.visibility = View.VISIBLE
@@ -143,8 +146,10 @@ class MainActivity : AppCompatActivity() {
 
                         dialog_builder.setTitle(getString(R.string.filter_measures))
                         dialog_builder.setItems(items) { _, index ->
-                            queryable_model.changeQuery(queries[index].second)
-                            map_fragment.refreshMap()
+                            lifecycleScope.launch {
+                                queryable_model.changeQuery(queries[index].second)
+                                map_fragment.refreshMap()
+                            }
                         }
                         dialog_builder.create().show()
                     }
@@ -178,7 +183,9 @@ class MainActivity : AppCompatActivity() {
 
         try {
             curr_model.loadSettingsPreferences()
-            map_fragment.refreshMap()
+            lifecycleScope.launch {
+                map_fragment.refreshMap()
+            }
             startPeriodicScan()
             BackgroundScanService.stop(this)
         }

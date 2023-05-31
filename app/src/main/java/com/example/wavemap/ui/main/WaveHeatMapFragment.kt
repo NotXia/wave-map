@@ -31,6 +31,8 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
 import kotlinx.coroutines.*
+import kotlinx.coroutines.sync.Mutex
+import kotlinx.coroutines.sync.withLock
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
@@ -47,19 +49,26 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
 
     private var markers : MutableList<Marker> = mutableListOf() // Markers containing tile labels
 
+    private val map_mutex = Mutex()
+
     val current_tile: MutableLiveData<LatLng> by lazy {
         MutableLiveData<LatLng>()
     }
 
-    fun changeViewModel(view_model : MeasureViewModel) {
+    suspend fun changeViewModel(view_model : MeasureViewModel) {
         this.view_model = view_model
         refreshMap()
     }
 
-    fun refreshMap() {
+    suspend fun refreshMap() {
         if (!this::google_map.isInitialized) { return }
-        google_map.clear()
-        fillWithTiles()
+
+        map_mutex.withLock {
+            withContext(Dispatchers.Main) {
+                google_map.clear()
+                fillWithTiles()
+            }
+        }
     }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?) : View? {
@@ -101,7 +110,9 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
 
                 google_map.setOnCameraIdleListener {
                     updateTilesLength()
-                    refreshMap()
+                    lifecycleScope.launch {
+                        refreshMap()
+                    }
                 }
             }
         }
