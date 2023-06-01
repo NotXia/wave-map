@@ -238,24 +238,28 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
                 if (tile_average != null && pref_manager.getBoolean("show_tile_label", true)) {
                     val text = "${tile_average.toInt()} ${view_model.measure_unit}"
                     val textPaint = Paint()
-                    textPaint.textSize = 30f
-                    val width = textPaint.measureText(text)
-                    val height = textPaint.textSize
+                    textPaint.textSize = 35f
+                    var width = textPaint.measureText(text)
+                    var height = textPaint.textSize
 
-                    // Put the text only if there is enough space
-                    if (google_map.projection.toScreenLocation(top_right_corner).x - google_map.projection.toScreenLocation(top_left_corner).x > width) {
-                        val image = Bitmap.createBitmap(width.toInt(), height.toInt(), Bitmap.Config.ARGB_8888)
-                        val canvas = Canvas(image)
-                        canvas.drawText(text, 0f, canvas.height.toFloat(), textPaint)
-
-                        val marker = google_map.addMarker(
-                            MarkerOptions()
-                                .position(top_right_corner)
-                                .icon(BitmapDescriptorFactory.fromBitmap(image))
-                                .anchor(1f, 0f)
-                        )
-                        if (marker != null) { markers.add(marker) }
+                    // Reduce font size if there is not enough space
+                    while (google_map.projection.toScreenLocation(top_right_corner).x - google_map.projection.toScreenLocation(top_left_corner).x < width && textPaint.textSize > 5f) {
+                        textPaint.textSize -= 2f
+                        width = textPaint.measureText(text)
+                        height = textPaint.textSize
                     }
+
+                    val image = Bitmap.createBitmap(width.toInt(), height.toInt(), Bitmap.Config.ARGB_8888)
+                    val canvas = Canvas(image)
+                    canvas.drawText(text, 0f, canvas.height.toFloat(), textPaint)
+
+                    val marker = google_map.addMarker(
+                        MarkerOptions()
+                            .position(top_right_corner)
+                            .icon(BitmapDescriptorFactory.fromBitmap(image))
+                            .anchor(1f, 0f)
+                    )
+                    if (marker != null) { markers.add(marker) }
                 }
             }
         }
