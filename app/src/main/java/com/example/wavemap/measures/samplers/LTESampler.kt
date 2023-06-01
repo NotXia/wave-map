@@ -31,8 +31,8 @@ class LTESampler : WaveSampler {
     }
 
     override suspend fun sample() : List<WaveMeasure> = suspendCoroutine { cont ->
-        if ( ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED ) {
-            return@suspendCoroutine cont.resumeWithException( SecurityException("Missing RECORD_AUDIO permissions") )
+        if ( ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ) {
+            return@suspendCoroutine cont.resumeWithException( SecurityException("Missing ACCESS_FINE_LOCATION permissions") )
         }
 
         val telephony_manager = context.getSystemService(TELEPHONY_SERVICE) as TelephonyManager?

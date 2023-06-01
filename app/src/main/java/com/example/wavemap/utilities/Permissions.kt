@@ -42,7 +42,7 @@ class Permissions {
                 else -> arrayOf()
             }
 
-        val requiredAtInit : Array<String>
+        val allRequired : Array<String>
             get() = gps + wifi + lte + noise + bluetooth + notification
 
         val minimumRequired : Array<String>

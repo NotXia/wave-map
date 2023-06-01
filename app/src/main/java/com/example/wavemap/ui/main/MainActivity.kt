@@ -32,13 +32,13 @@ import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import com.example.wavemap.R
 import com.example.wavemap.dialogs.MissingMinimumPermissionsDialog
+import com.example.wavemap.dialogs.OpenSettingsDialog
 import com.example.wavemap.services.BackgroundScanService
 import com.example.wavemap.ui.main.viewmodels.*
 import com.example.wavemap.ui.settings.SettingsActivity
 import com.example.wavemap.utilities.Permissions
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlinx.coroutines.withContext
 
@@ -48,14 +48,18 @@ class MainActivity : AppCompatActivity() {
     private class SamplerHandler(
         val view_model : MeasureViewModel,
         val label : String,
+        val permissions : Array<String>,
+        var permissions_dialog : OpenSettingsDialog
+    ) {
         var currently_measuring : Boolean = false // To prevent multiple measure requests
-    )
+    }
 
-    private lateinit var curr_model : MeasureViewModel
+    private lateinit var curr_sampler : SamplerHandler
     private lateinit var map_fragment : WaveHeatMapFragment
     private lateinit var pref_manager : SharedPreferences
     private var successful_init = false
     private lateinit var permissions_check_and_init : ActivityResultLauncher<Array<String>>
+    private lateinit var permissions_check_and_measure_current : ActivityResultLauncher<Array<String>>
 
     private val wifi_model : WiFiViewModel by viewModels()
     private val lte_model : LTEViewModel by viewModels()
@@ -71,7 +75,7 @@ class MainActivity : AppCompatActivity() {
 
     private var periodic_scan_handler : Handler = Handler(Looper.getMainLooper())
 
-    private var dialogs = mutableListOf<DialogFragment>()
+    private var to_dismiss_dialogs = mutableListOf<DialogFragment>()
 
 
 
@@ -80,18 +84,18 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         available_samplers = arrayOf(
-            SamplerHandler(wifi_model, resources.getString(R.string.wifi)),
-            SamplerHandler(lte_model, resources.getString(R.string.lte)),
-            SamplerHandler(noise_model, resources.getString(R.string.noise)),
-            SamplerHandler(bluetooth_model, resources.getString(R.string.bluetooth)),
+            SamplerHandler(wifi_model, resources.getString(R.string.wifi), Permissions.wifi, OpenSettingsDialog(R.string.missing_wifi_permission, R.string.missing_wifi_permission_desc)),
+            SamplerHandler(lte_model, resources.getString(R.string.lte), Permissions.lte, OpenSettingsDialog(R.string.missing_lte_permission, R.string.missing_lte_permission_desc)),
+            SamplerHandler(noise_model, resources.getString(R.string.noise), Permissions.noise, OpenSettingsDialog(R.string.missing_noise_permission, R.string.missing_noise_permission_desc)),
+            SamplerHandler(bluetooth_model, resources.getString(R.string.bluetooth), Permissions.bluetooth, OpenSettingsDialog(R.string.missing_bluetooth_permission, R.string.missing_bluetooth_permission_desc)),
         )
 
         measure_spinner = findViewById(R.id.spinner_sampler)
         fab_start_measure = findViewById(R.id.btn_scan)
         fab_query = findViewById(R.id.btn_query)
 
-        curr_model = wifi_model
-        map_fragment = WaveHeatMapFragment(curr_model)
+        curr_sampler = available_samplers[0]
+        map_fragment = WaveHeatMapFragment(curr_sampler.view_model)
 
         pref_manager = PreferenceManager.getDefaultSharedPreferences(baseContext)
 
@@ -99,11 +103,32 @@ class MainActivity : AppCompatActivity() {
             // Checks if the minimum required permissions are granted
             if (!Permissions.minimumRequired.all{ permission -> ContextCompat.checkSelfPermission(baseContext, permission) == PackageManager.PERMISSION_GRANTED }) {
                 val dialog = MissingMinimumPermissionsDialog()
-                dialogs.add(dialog)
+                to_dismiss_dialogs.add(dialog)
                 dialog.show(supportFragmentManager, MissingMinimumPermissionsDialog.TAG)
             }
             else if (!successful_init) {
                 init()
+            }
+        }
+
+        permissions_check_and_measure_current = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { is_granted: Map<String, Boolean> ->
+            if (!is_granted.values.all{ granted -> granted }) {
+                val dialog = curr_sampler.permissions_dialog
+                dialog.show(supportFragmentManager, OpenSettingsDialog.TAG)
+            }
+            else {
+                lifecycleScope.launch(Dispatchers.IO) {
+                    try {
+                        measureOne(curr_sampler)
+                    }
+                    catch (err: Exception) {
+                        // TODO Error handling
+                        withContext(Dispatchers.Main) {
+                            Toast.makeText(baseContext, ":(", Toast.LENGTH_SHORT).show()
+                        }
+                        Log.e("measure", "User triggered measure")
+                    }
+                }
             }
         }
     }
@@ -111,14 +136,14 @@ class MainActivity : AppCompatActivity() {
     override fun onStart() {
         super.onStart()
 
-        permissions_check_and_init.launch(Permissions.requiredAtInit)
+        permissions_check_and_init.launch(Permissions.allRequired)
     }
 
     override fun onResume() {
         super.onResume()
 
         try {
-            curr_model.loadSettingsPreferences()
+            curr_sampler.view_model.loadSettingsPreferences()
             lifecycleScope.launch {
                 map_fragment.refreshMap()
             }
@@ -134,7 +159,7 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         stopPeriodicScan()
-        dialogs.forEach { it.dismiss().runCatching { /* Empty */ } }
+        to_dismiss_dialogs.forEach { try { it.dismiss() } catch (err: Exception) { /* Empty */ } }
         BackgroundScanService.start(this)
     }
 
@@ -174,10 +199,10 @@ class MainActivity : AppCompatActivity() {
             override fun onNothingSelected(parent: AdapterView<*>?) { }
 
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                curr_model = available_samplers[position].view_model
-                lifecycleScope.launch { map_fragment.changeViewModel(curr_model) }
+                curr_sampler = available_samplers[position]
+                lifecycleScope.launch { map_fragment.changeViewModel(curr_sampler.view_model) }
 
-                fab_query.visibility = if (curr_model is QueryableMeasureViewModel) View.VISIBLE else View.INVISIBLE
+                fab_query.visibility = if (curr_sampler.view_model is QueryableMeasureViewModel) View.VISIBLE else View.INVISIBLE
 
                 // Disable measure fab if the sampler is already measuring
                 if (available_samplers[position].currently_measuring) { disableMeasureFab() }
@@ -195,8 +220,8 @@ class MainActivity : AppCompatActivity() {
 
     private fun initFilterFAB() {
         fab_query.setOnClickListener {
-            if (curr_model !is QueryableMeasureViewModel) { return@setOnClickListener }
-            val queryable_model = curr_model as QueryableMeasureViewModel
+            if (curr_sampler.view_model !is QueryableMeasureViewModel) { return@setOnClickListener }
+            val queryable_model = curr_sampler as QueryableMeasureViewModel
 
             lifecycleScope.launch(Dispatchers.IO) {
                 val queries = ( listOf(Pair(getString(R.string.remove_filter), null)) + queryable_model.listQueries() )
@@ -232,53 +257,42 @@ class MainActivity : AppCompatActivity() {
      * Measure
      * */
 
-    private suspend fun measureAll() {
-        available_samplers.forEach {
-            // The sampler is already measuring
-            if (it.currently_measuring) { return }
+    private suspend fun measureOne(sampler: SamplerHandler) {
+        if (sampler.currently_measuring) { return } // The sampler is already measuring
+        sampler.currently_measuring = true
 
-            GlobalScope.launch {
-                it.currently_measuring = true
+        if (curr_sampler.view_model == sampler.view_model) {
+            withContext(Dispatchers.Main) { disableMeasureFab() }
+        }
 
-                if (curr_model == it.view_model) {
-                    withContext(Dispatchers.Main) { disableMeasureFab() }
-                }
+        sampler.view_model.measure()
 
-                it.view_model.measure()
-
-                // Execute only if, at the end of the measure, the selected sampler is still this one (user may have changed the sampler type in the meantime)
-                if (curr_model == it.view_model) {
-                    withContext(Dispatchers.Main) {
-                        map_fragment.refreshMap()
-                        enableMeasureFab()
-                    }
-                }
-
-                it.currently_measuring = false
+        // Execute only if, at the end of the measure, the selected sampler is still this one (user may have changed the sampler type in the meantime)
+        if (curr_sampler.view_model == sampler.view_model) {
+            withContext(Dispatchers.Main) {
+                map_fragment.refreshMap()
+                enableMeasureFab()
             }
         }
+
+        sampler.currently_measuring = false
     }
 
     private fun userTriggeredMeasure() {
-        GlobalScope.launch {
-            try {
-                measureAll()
-            } catch (err: Exception) {
-                // TODO Error handling
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(baseContext, ":(", Toast.LENGTH_SHORT).show()
-                }
-                Log.e("measure", "User triggered measure $err")
-            }
+        lifecycleScope.launch(Dispatchers.IO) {
+            permissions_check_and_measure_current.launch(curr_sampler.permissions)
         }
     }
 
     private fun autoTriggeredMeasure() {
-        GlobalScope.launch {
-            try {
-                measureAll()
-            } catch (err: Exception) {
-                Log.e("measure", "Auto triggered measure $err")
+        available_samplers.forEach {
+            lifecycleScope.launch(Dispatchers.IO) {
+                try {
+                    measureOne(it)
+                }
+                catch (err: Exception) {
+                    Log.e("measure", "Auto triggered measure (${it.view_model})")
+                }
             }
         }
     }
