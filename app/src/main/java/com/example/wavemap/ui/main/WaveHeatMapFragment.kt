@@ -64,7 +64,7 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
     }
 
     suspend fun refreshMap() {
-        if (!this::google_map.isInitialized) { return }
+        if (!this::google_map.isInitialized || !this::center.isInitialized || !this::top_left_center.isInitialized) { return }
 
         map_mutex.withLock {
             withContext(Dispatchers.Main) {

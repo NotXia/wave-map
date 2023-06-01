@@ -1,11 +1,11 @@
 package com.example.wavemap.ui.main
 
-import android.Manifest
 import android.animation.Animator
 import android.animation.Animator.AnimatorListener
 import android.animation.ValueAnimator
 import android.content.Intent
 import android.content.SharedPreferences
+import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.graphics.Color
 import android.os.Bundle
@@ -20,17 +20,22 @@ import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Spinner
 import android.widget.Toast
+import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
 import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
+import androidx.core.content.ContextCompat
+import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.commit
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import com.example.wavemap.R
+import com.example.wavemap.dialogs.MissingMinimumPermissionsDialog
+import com.example.wavemap.services.BackgroundScanService
 import com.example.wavemap.ui.main.viewmodels.*
 import com.example.wavemap.ui.settings.SettingsActivity
-import com.example.wavemap.services.BackgroundScanService
+import com.example.wavemap.utilities.Permissions
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.GlobalScope
@@ -49,13 +54,13 @@ class MainActivity : AppCompatActivity() {
     private lateinit var curr_model : MeasureViewModel
     private lateinit var map_fragment : WaveHeatMapFragment
     private lateinit var pref_manager : SharedPreferences
-
+    private var successful_init = false
+    private lateinit var permissions_check_and_init : ActivityResultLauncher<Array<String>>
 
     private val wifi_model : WiFiViewModel by viewModels()
     private val lte_model : LTEViewModel by viewModels()
     private val noise_model : NoiseViewModel by viewModels()
     private val bluetooth_model : BluetoothViewModel by viewModels()
-
     private lateinit var available_samplers : Array<SamplerHandler>
 
     private lateinit var measure_spinner : Spinner
@@ -65,6 +70,9 @@ class MainActivity : AppCompatActivity() {
     private var fab_start_measure_loading_anim : ValueAnimator? = null
 
     private var periodic_scan_handler : Handler = Handler(Looper.getMainLooper())
+
+    private var dialogs = mutableListOf<DialogFragment>()
+
 
 
     override fun onCreate(savedInstanceState: Bundle?) {
@@ -87,95 +95,23 @@ class MainActivity : AppCompatActivity() {
 
         pref_manager = PreferenceManager.getDefaultSharedPreferences(baseContext)
 
-        registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { is_granted: Map<String, Boolean> ->
-            if (!is_granted.values.all{ granted -> granted }) {
-                // TODO error handling
-                return@registerForActivityResult
+        permissions_check_and_init = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { _ ->
+            // Checks if the minimum required permissions are granted
+            if (!Permissions.minimumRequired.all{ permission -> ContextCompat.checkSelfPermission(baseContext, permission) == PackageManager.PERMISSION_GRANTED }) {
+                val dialog = MissingMinimumPermissionsDialog()
+                dialogs.add(dialog)
+                dialog.show(supportFragmentManager, MissingMinimumPermissionsDialog.TAG)
             }
-
-            supportFragmentManager.commit {
-                replace(R.id.fragment_container_map, map_fragment)
+            else if (!successful_init) {
+                init()
             }
+        }
+    }
 
-            // Measure type spinner
-            measure_spinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, available_samplers.map{ it.label })
-            measure_spinner.setSelection(0, false) // Selects the first element of the spinner (before adding the listener)
-            measure_spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener{
-                override fun onNothingSelected(parent: AdapterView<*>?) { }
+    override fun onStart() {
+        super.onStart()
 
-                override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                    curr_model = available_samplers[position].view_model
-                    lifecycleScope.launch {
-                        map_fragment.changeViewModel(curr_model)
-                    }
-
-                    if (curr_model is QueryableMeasureViewModel) {
-                        fab_query.visibility = View.VISIBLE
-                    }
-                    else {
-                        fab_query.visibility = View.INVISIBLE
-                    }
-
-                    // Disable measure fab if the sampler is already measuring
-                    if (available_samplers[position].currently_measuring) {
-                        disableMeasureFab()
-                    }
-                    else {
-                        enableMeasureFab()
-                    }
-                }
-            }
-
-            // New measurement fab
-            fab_start_measure.setOnClickListener {
-                userTriggeredMeasure()
-                resetPeriodicScan()
-            }
-
-            // Filter measures
-            fab_query.setOnClickListener {
-                if (curr_model !is QueryableMeasureViewModel) { return@setOnClickListener }
-                val queryable_model = curr_model as QueryableMeasureViewModel
-
-                GlobalScope.launch {
-                    val queries = ( listOf(Pair(getString(R.string.remove_filter), null)) + queryable_model.listQueries() )
-                    val items : Array<CharSequence> = queries.map{ it.first }.toTypedArray()
-
-                    withContext(Dispatchers.Main) {
-                        val dialog_builder : AlertDialog.Builder = AlertDialog.Builder(this@MainActivity)
-
-                        dialog_builder.setTitle(getString(R.string.filter_measures))
-                        dialog_builder.setItems(items) { _, index ->
-                            lifecycleScope.launch {
-                                queryable_model.changeQuery(queries[index].second)
-                                map_fragment.refreshMap()
-                            }
-                        }
-                        dialog_builder.create().show()
-                    }
-                }
-            }
-
-            // Listen for tile changes
-            map_fragment.current_tile.observe(this) { new_tile ->
-                if (pref_manager.getBoolean("tile_change_scan", false)) {
-                    autoTriggeredMeasure()
-                    resetPeriodicScan()
-                }
-            }
-
-            startPeriodicScan()
-
-        }.launch(
-            arrayOf(
-                Manifest.permission.ACCESS_FINE_LOCATION,
-                Manifest.permission.RECORD_AUDIO,
-                Manifest.permission.BLUETOOTH_SCAN,
-                Manifest.permission.BLUETOOTH_CONNECT,
-                Manifest.permission.POST_NOTIFICATIONS
-            )
-        )
-
+        permissions_check_and_init.launch(Permissions.requiredAtInit)
     }
 
     override fun onResume() {
@@ -198,6 +134,7 @@ class MainActivity : AppCompatActivity() {
     override fun onPause() {
         super.onPause()
         stopPeriodicScan()
+        dialogs.forEach { it.dismiss().runCatching { /* Empty */ } }
         BackgroundScanService.start(this)
     }
 
@@ -209,6 +146,91 @@ class MainActivity : AppCompatActivity() {
 
         return true
     }
+
+
+    /**
+     * Init
+     * */
+
+    private fun init() {
+        supportFragmentManager.commit {
+            replace(R.id.fragment_container_map, map_fragment)
+        }
+
+        initSamplerSelector()
+        initNewMeasureFAB()
+        initFilterFAB()
+        initTileChangeListener()
+
+        startPeriodicScan()
+
+        successful_init = true
+    }
+
+    private fun initSamplerSelector() {
+        measure_spinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, available_samplers.map{ it.label })
+        measure_spinner.setSelection(0, false) // Selects the first element of the spinner (before adding the listener)
+        measure_spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener{
+            override fun onNothingSelected(parent: AdapterView<*>?) { }
+
+            override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
+                curr_model = available_samplers[position].view_model
+                lifecycleScope.launch { map_fragment.changeViewModel(curr_model) }
+
+                fab_query.visibility = if (curr_model is QueryableMeasureViewModel) View.VISIBLE else View.INVISIBLE
+
+                // Disable measure fab if the sampler is already measuring
+                if (available_samplers[position].currently_measuring) { disableMeasureFab() }
+                else { enableMeasureFab() }
+            }
+        }
+    }
+
+    private fun initNewMeasureFAB() {
+        fab_start_measure.setOnClickListener {
+            userTriggeredMeasure()
+            resetPeriodicScan()
+        }
+    }
+
+    private fun initFilterFAB() {
+        fab_query.setOnClickListener {
+            if (curr_model !is QueryableMeasureViewModel) { return@setOnClickListener }
+            val queryable_model = curr_model as QueryableMeasureViewModel
+
+            lifecycleScope.launch(Dispatchers.IO) {
+                val queries = ( listOf(Pair(getString(R.string.remove_filter), null)) + queryable_model.listQueries() )
+                val items : Array<CharSequence> = queries.map{ it.first }.toTypedArray()
+
+                withContext(Dispatchers.Main) {
+                    val dialog_builder : AlertDialog.Builder = AlertDialog.Builder(this@MainActivity)
+
+                    dialog_builder.setTitle(getString(R.string.filter_measures))
+                    dialog_builder.setItems(items) { _, index ->
+                        lifecycleScope.launch {
+                            queryable_model.changeQuery(queries[index].second)
+                            map_fragment.refreshMap()
+                        }
+                    }
+                    dialog_builder.create().show()
+                }
+            }
+        }
+    }
+
+    private fun initTileChangeListener() {
+        map_fragment.current_tile.observe(this) { new_tile ->
+            if (pref_manager.getBoolean("tile_change_scan", false)) {
+                autoTriggeredMeasure()
+                resetPeriodicScan()
+            }
+        }
+    }
+
+
+    /**
+     * Measure
+     * */
 
     private suspend fun measureAll() {
         available_samplers.forEach {
@@ -236,6 +258,35 @@ class MainActivity : AppCompatActivity() {
             }
         }
     }
+
+    private fun userTriggeredMeasure() {
+        GlobalScope.launch {
+            try {
+                measureAll()
+            } catch (err: Exception) {
+                // TODO Error handling
+                withContext(Dispatchers.Main) {
+                    Toast.makeText(baseContext, ":(", Toast.LENGTH_SHORT).show()
+                }
+                Log.e("measure", "User triggered measure $err")
+            }
+        }
+    }
+
+    private fun autoTriggeredMeasure() {
+        GlobalScope.launch {
+            try {
+                measureAll()
+            } catch (err: Exception) {
+                Log.e("measure", "Auto triggered measure $err")
+            }
+        }
+    }
+
+
+    /**
+     * Measure FAB
+     * */
 
     private fun disableMeasureFab() {
         fab_start_measure.isClickable = false
@@ -283,29 +334,10 @@ class MainActivity : AppCompatActivity() {
     }
 
 
-    private fun userTriggeredMeasure() {
-        GlobalScope.launch {
-            try {
-                measureAll()
-            } catch (err: Exception) {
-                // TODO Error handling
-                withContext(Dispatchers.Main) {
-                    Toast.makeText(baseContext, ":(", Toast.LENGTH_SHORT).show()
-                }
-                Log.e("measure", "User triggered measure $err")
-            }
-        }
-    }
 
-    private fun autoTriggeredMeasure() {
-        GlobalScope.launch {
-            try {
-                measureAll()
-            } catch (err: Exception) {
-                Log.e("measure", "Auto triggered measure $err")
-            }
-        }
-    }
+    /**
+     * Foreground periodic measures
+     * */
 
     private fun startPeriodicScan() {
         if (pref_manager.getBoolean("periodic_scan", false)) {

@@ -8,6 +8,10 @@
     <string name="noise">Suono</string>
     <string name="bluetooth">Bluetooth</string>
 
+    <string name="filter_measures">Filtra misure</string>
+    <string name="remove_filter">Rimuovi filtro</string>
+
+    <!-- Settings -->
     <string name="sampler_settings">Opzioni misuratori</string>
     <string name="scan_settings">Opzioni scansione</string>
     <string name="notification_settings">Notifiche</string>
@@ -23,9 +27,6 @@
     <string name="past_limit">Misurazioni passate da considerare</string>
     <string name="range_size">Numero di intervalli</string>
 
-    <string name="filter_measures">Filtra misure</string>
-    <string name="remove_filter">Rimuovi filtro</string>
-
     <string name="periodic_measure">Abilita scansioni periodiche</string>
     <string name="periodic_measure_desc">Esegui scansioni periodiche quando l\'app è attiva</string>
     <string name="periodic_measure_interval">Intervallo scansioni (in secondi)</string>
@@ -38,8 +39,14 @@
     <string name="tile_label">Valore delle caselle</string>
     <string name="tile_label_desc">Visualizza il valore delle celle</string>
 
+    <!-- Notifications -->
     <string name="notification_uncovered_area">Area scoperta</string>
     <string name="notification_uncovered_area_desc">Notifica quando si entra in un\'area scoperta da misurazioni</string>
     <string name="notification_uncovered_area_text">Questa area non è coperta da misurazioni</string>
+
+    <!-- Dialog -->
+    <string name="exit">Esci</string>
+    <string name="missing_minimum_permissions">Permessi insufficienti</string>
+    <string name="missing_minimum_permissions_desc">I permessi di posizione sono richiesti per il corretto funzionamento dell\'app</string>
 
 </resources>

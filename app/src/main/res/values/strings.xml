@@ -7,6 +7,10 @@
     <string name="noise">Noise</string>
     <string name="bluetooth">Bluetooth</string>
 
+    <string name="filter_measures">Filter measures</string>
+    <string name="remove_filter">Remove filter</string>
+
+    <!-- Settings -->
     <string name="sampler_settings">Sampler options</string>
     <string name="scan_settings">Scan options</string>
     <string name="notification_settings">Notifications</string>
@@ -22,9 +26,6 @@
     <string name="past_limit">Past measures to consider</string>
     <string name="range_size">Number of ranges</string>
 
-    <string name="filter_measures">Filter measures</string>
-    <string name="remove_filter">Remove filter</string>
-
     <string name="periodic_measure">Enable periodic scans</string>
     <string name="periodic_measure_desc">Periodically scan when the application is active</string>
     <string name="periodic_measure_interval">Scan time interval (in seconds)</string>
@@ -37,8 +38,14 @@
     <string name="tile_label">Tile value</string>
     <string name="tile_label_desc">Show the value of tiles</string>
 
+    <!-- Notifications -->
     <string name="notification_uncovered_area">Uncovered area</string>
     <string name="notification_uncovered_area_desc">Notify if the area is uncovered from measurements</string>
     <string name="notification_uncovered_area_text">This area is not covered by measurements</string>
+
+    <!-- Dialog -->
+    <string name="exit">Exit</string>
+    <string name="missing_minimum_permissions">Missing permissions</string>
+    <string name="missing_minimum_permissions_desc">Permission to access location is required to use the app</string>
 
 </resources>
