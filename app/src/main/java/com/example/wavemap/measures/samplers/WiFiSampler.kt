@@ -79,13 +79,14 @@ class WiFiSampler : WaveSampler {
             val connectivity_manager : ConnectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
             val timeout_handler = Handler(Looper.getMainLooper())
 
-            val callback = object : ConnectivityManager.NetworkCallback(FLAG_INCLUDE_LOCATION_INFO) {
+            val callback = object : ConnectivityManager.NetworkCallback(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) FLAG_INCLUDE_LOCATION_INFO else 0) {
                 override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
                     timeout_handler.removeCallbacksAndMessages(null)
                     connectivity_manager.unregisterNetworkCallback(this)
 
                     GlobalScope.launch {
-                        val wifi_info = networkCapabilities.transportInfo as WifiInfo
+                        val wifi_info = networkCapabilities.transportInfo as WifiInfo?
+                            ?: return@launch cont.resume( null )
                         val current_location: LatLng = LocationUtils.getCurrent(context)
                         val timestamp = System.currentTimeMillis()
 
