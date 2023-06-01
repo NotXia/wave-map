@@ -47,15 +47,26 @@
     <!-- Dialog -->
     <string name="exit">Esci</string>
     <string name="cancel">Annulla</string>
+
     <string name="missing_minimum_permissions">Permessi insufficienti</string>
     <string name="missing_minimum_permissions_desc">I permessi di posizione sono richiesti per il corretto funzionamento dell\'app</string>
+
     <string name="missing_wifi_permission">Permessi di posizione mancanti</string>
     <string name="missing_wifi_permission_desc">Per misurare il Wi-Fi sono necessari i permessi per accedere alla posizione</string>
+
     <string name="missing_lte_permission">Permessi di posizione mancanti</string>
     <string name="missing_lte_permission_desc">Per misurare l\'LTE sono necessari i permessi per accedere alla posizione</string>
+
     <string name="missing_noise_permission">Permessi microfono mancanti</string>
     <string name="missing_noise_permission_desc">Per misurare il suono sono necessari i permessi per accedere al microfono</string>
+
     <string name="missing_bluetooth_permission">Permessi Bluetooth mancanti</string>
     <string name="missing_bluetooth_permission_desc">Per misurare il Bluetooth sono necessari i permessi per accedere al Bluetooth</string>
+
+    <string name="missing_background_gps_permission">Permessi per posizione in background mancanti</string>
+    <string name="missing_background_gps_permission_desc">La posizione in background è necessaria per rilevare la posizione del dispositivo quando l\'app è inattiva</string>
+
+    <string name="battery_optimization_permission">Consenti attività in background</string>
+    <string name="battery_optimization_permission_desc">Per un corretto funzionamento, è consigliabile consentire l\'esecuzione in background all\'applicazione</string>
 
 </resources>

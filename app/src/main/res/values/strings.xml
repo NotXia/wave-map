@@ -46,15 +46,26 @@
     <!-- Dialog -->
     <string name="exit">Exit</string>
     <string name="cancel">Cancel</string>
+
     <string name="missing_minimum_permissions">Missing permissions</string>
     <string name="missing_minimum_permissions_desc">Permission to access location is required to use the app</string>
+
     <string name="missing_wifi_permission">Missing location permission</string>
     <string name="missing_wifi_permission_desc">Location permission is required to start a Wi-Fi measurement</string>
+
     <string name="missing_lte_permission">Missing location permission</string>
     <string name="missing_lte_permission_desc">Location permission is required to start a LTE measurement</string>
+
     <string name="missing_noise_permission">Missing microphone permission</string>
     <string name="missing_noise_permission_desc">Microphone permission is required to start a noise measurement</string>
+
     <string name="missing_bluetooth_permission">Missing Bluetooth permission</string>
     <string name="missing_bluetooth_permission_desc">Bluetooth permission is required to start a measurement</string>
+
+    <string name="missing_background_gps_permission">Missing background location permission</string>
+    <string name="missing_background_gps_permission_desc">Background location is required to retrieve the position of the device while the app is inactive</string>
+
+    <string name="battery_optimization_permission">Allow background activity</string>
+    <string name="battery_optimization_permission_desc">It is advisable to allow the application to maintain background activities</string>
 
 </resources>

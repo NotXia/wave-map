@@ -16,6 +16,19 @@ class Permissions {
                 Manifest.permission.ACCESS_COARSE_LOCATION
             )
 
+        val background_gps : Array<String>
+            get() = when {
+                Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q -> arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION,
+                    Manifest.permission.ACCESS_BACKGROUND_LOCATION
+                )
+                else -> arrayOf(
+                    Manifest.permission.ACCESS_FINE_LOCATION,
+                    Manifest.permission.ACCESS_COARSE_LOCATION,
+                )
+            }
+
         val wifi : Array<String>
             get() = gps
 
@@ -34,7 +47,7 @@ class Permissions {
                     Manifest.permission.BLUETOOTH_CONNECT
                 )
                 else -> arrayOf()
-        }
+            }
 
         val notification : Array<String>
             get() = when {

@@ -1,20 +1,18 @@
 package com.example.wavemap.ui.settings
 
+import android.content.pm.PackageManager
 import android.os.Bundle
 import android.text.InputType
-import androidx.activity.result.contract.ActivityResultContracts
-import androidx.preference.CheckBoxPreference
-import androidx.preference.EditTextPreference
-import androidx.preference.Preference
-import androidx.preference.PreferenceFragmentCompat
+import androidx.core.content.ContextCompat
+import androidx.preference.*
 import com.example.wavemap.R
+import com.example.wavemap.dialogs.BackgroundServicePermissionsDialog
+import com.example.wavemap.dialogs.BatteryOptimizationDialog
 import com.example.wavemap.services.BackgroundScanService
+import com.example.wavemap.utilities.Misc
+import com.example.wavemap.utilities.Permissions
 
 class MainSettingsFragment : PreferenceFragmentCompat() {
-    private val permission_check_and_service_start = registerForActivityResult( ActivityResultContracts.RequestMultiplePermissions() ) { permissions ->
-        BackgroundScanService.start(requireActivity())
-    }
-
     override fun onCreatePreferences(savedInstanceState: Bundle?, rootKey: String?) {
         setPreferencesFromResource(R.xml.main_preferences, rootKey)
 
@@ -25,7 +23,18 @@ class MainSettingsFragment : PreferenceFragmentCompat() {
         // Listener for settings that may require to start the BackgroundScanService
         val service_options_listener = Preference.OnPreferenceChangeListener { preference, enable ->
             if (enable as Boolean) {
-                permission_check_and_service_start.launch(arrayOf(android.Manifest.permission.ACCESS_BACKGROUND_LOCATION))
+                // Handle background location permission and battery optimization
+                if (!Permissions.background_gps.all{ perm -> ContextCompat.checkSelfPermission(requireContext(), perm) == PackageManager.PERMISSION_GRANTED }) {
+                    BackgroundServicePermissionsDialog {
+                        BackgroundScanService.start(requireActivity())
+                    }.show(childFragmentManager, BackgroundServicePermissionsDialog.TAG)
+                } else if (Misc.isBatteryOptimizationOn(requireContext())) {
+                    BatteryOptimizationDialog{
+                        BackgroundScanService.start(requireActivity())
+                    }.show(childFragmentManager, BatteryOptimizationDialog.TAG)
+                } else {
+                    BackgroundScanService.start(requireActivity())
+                }
             }
             else {
                 if (!BackgroundScanService.needToStartService(requireActivity())) { BackgroundScanService.stop(requireActivity()) }
