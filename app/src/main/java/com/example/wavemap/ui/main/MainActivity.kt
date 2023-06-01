@@ -221,7 +221,7 @@ class MainActivity : AppCompatActivity() {
     private fun initFilterFAB() {
         fab_query.setOnClickListener {
             if (curr_sampler.view_model !is QueryableMeasureViewModel) { return@setOnClickListener }
-            val queryable_model = curr_sampler as QueryableMeasureViewModel
+            val queryable_model = curr_sampler.view_model as QueryableMeasureViewModel
 
             lifecycleScope.launch(Dispatchers.IO) {
                 val queries = ( listOf(Pair(getString(R.string.remove_filter), null)) + queryable_model.listQueries() )
