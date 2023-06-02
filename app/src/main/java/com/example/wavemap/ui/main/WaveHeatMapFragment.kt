@@ -73,7 +73,7 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
         map_mutex.withLock {
             withContext(Dispatchers.Main) {
                 google_map.clear()
-                fillWithTiles()
+                fillScreenWithTiles()
             }
         }
     }
@@ -251,22 +251,44 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
         if (marker != null) { markers.add(marker) }
     }
 
-    /* Fills the screen with tiles offset from the center */
-    private fun fillWithTiles() {
-        // TODO handle wrap up zone
-        val top_left_visible = LatLng(google_map.projection.visibleRegion.latLngBounds.northeast.latitude, google_map.projection.visibleRegion.latLngBounds.southwest.longitude)
-        val bottom_right_visible = LatLng(google_map.projection.visibleRegion.latLngBounds.southwest.latitude, google_map.projection.visibleRegion.latLngBounds.northeast.longitude)
+    private fun fillScreenWithTiles() {
+        val top_left_visible = getReferenceTileContaining(
+            LatLng(google_map.projection.visibleRegion.latLngBounds.northeast.latitude, google_map.projection.visibleRegion.latLngBounds.southwest.longitude)
+        )
+        val bottom_right_visible = getReferenceTileContaining(
+            LatLng(google_map.projection.visibleRegion.latLngBounds.southwest.latitude, google_map.projection.visibleRegion.latLngBounds.northeast.longitude)
+        )
 
-        val real_top_left_corner = getReferenceTileContaining(top_left_visible)
+        if (top_left_visible.longitude > bottom_right_visible.longitude) { // Wrap-up area (Pacific Ocean)
+            val left_side_bottom = LatLng(bottom_right_visible.latitude, 179.9)
+            val right_side_top = getReferenceTileContaining(
+                LatLng(top_left_visible.latitude, left_side_bottom.longitude + metersToLongitudeOffset(tile_length_meters, top_left_visible.latitude))
+            )
 
+            fillAreaWithTiles(top_left_visible, left_side_bottom)
+            fillAreaWithTiles(right_side_top, bottom_right_visible)
+        }
+        else {
+            fillAreaWithTiles(top_left_visible, bottom_right_visible)
+        }
+    }
+
+    private fun fillAreaWithTiles(top_left: LatLng, bottom_right: LatLng) {
         // Fill the screen with tiles
-        var current_tile = real_top_left_corner
-        while (current_tile.latitude >= bottom_right_visible.latitude) {
-            while (current_tile.longitude <= bottom_right_visible.longitude) {
+        var current_tile = top_left
+        while (current_tile.latitude >= bottom_right.latitude) {
+            while (current_tile.longitude <= bottom_right.longitude) {
                 drawTile(current_tile)
-                current_tile = LatLng( current_tile.latitude, current_tile.longitude + metersToLongitudeOffset(tile_length_meters, current_tile.latitude) )
+
+                val new_longitude = current_tile.longitude + metersToLongitudeOffset(tile_length_meters, current_tile.latitude)
+                current_tile = LatLng(current_tile.latitude, new_longitude)
+
+                // Wrap up handling
+                if (abs(new_longitude - current_tile.longitude) > metersToLongitudeOffset(tile_length_meters, current_tile.latitude)) {
+                    break
+                }
             }
-            current_tile = LatLng( current_tile.latitude - metersToLatitudeOffset(tile_length_meters), real_top_left_corner.longitude )
+            current_tile = LatLng( current_tile.latitude - metersToLatitudeOffset(tile_length_meters), top_left.longitude )
         }
     }
 
