@@ -13,6 +13,10 @@
 
     <string name="error_occurred">Si è verificato un errore</string>
 
+    <string name="new_measure">Nuova misurazione</string>
+    <string name="change_sampler">Cambia misuratore</string>
+
+
     <!-- Settings -->
     <string name="sampler_settings">Opzioni misuratori</string>
     <string name="scan_settings">Opzioni scansione</string>

@@ -12,6 +12,9 @@
 
     <string name="error_occurred">An error occurred</string>
 
+    <string name="new_measure">New measurement</string>
+    <string name="change_sampler">Change sampler</string>
+
     <!-- Settings -->
     <string name="sampler_settings">Sampler options</string>
     <string name="scan_settings">Scan options</string>
