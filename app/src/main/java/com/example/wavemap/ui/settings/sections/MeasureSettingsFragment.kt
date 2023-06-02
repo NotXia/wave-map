@@ -45,7 +45,7 @@ open class MeasureSettingsFragment(
             InputType.TYPE_CLASS_NUMBER or InputType.TYPE_NUMBER_FLAG_DECIMAL or InputType.TYPE_NUMBER_FLAG_SIGNED
         ))
         val past_limit_edittext = createEditText(
-            "${key}_past_limit", getString(R.string.range_bad),
+            "${key}_past_limit", getString(R.string.past_limit),
             Preference.SummaryProvider<EditTextPreference> { preference -> "${ preference.text ?: past_limit_default }" },
             InputType.TYPE_CLASS_NUMBER
         )
