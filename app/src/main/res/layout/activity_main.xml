@@ -31,10 +31,12 @@
         android:layout_marginEnd="16dp"
         android:layout_marginBottom="16dp"
         android:clickable="true"
-        app:backgroundTint="?android:colorPrimary"
+        app:backgroundTint="?attr/colorPrimary"
+        app:tint="?attr/colorOnPrimary"
         app:layout_constraintBottom_toBottomOf="parent"
         app:layout_constraintEnd_toEndOf="parent"
-        app:srcCompat="@android:drawable/ic_input_add" />
+        app:srcCompat="@android:drawable/ic_input_add"
+        android:focusable="true" />
 
     <com.google.android.material.floatingactionbutton.FloatingActionButton
         android:id="@+id/btn_query"
@@ -44,10 +46,12 @@
         android:layout_marginBottom="12dp"
         android:clickable="true"
         android:visibility="invisible"
-        app:backgroundTint="?android:colorPrimary"
+        app:backgroundTint="?attr/colorPrimary"
+        app:tint="?attr/colorOnPrimary"
         app:layout_constraintBottom_toTopOf="@+id/btn_scan"
         app:layout_constraintEnd_toEndOf="parent"
-        app:srcCompat="@android:drawable/ic_menu_search" />
+        app:srcCompat="@android:drawable/ic_search_category_default"
+        android:focusable="true" />
 
 
 </androidx.constraintlayout.widget.ConstraintLayout>
