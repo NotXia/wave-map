@@ -2,7 +2,6 @@ package com.example.wavemap.ui.main.viewmodels
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
-import androidx.lifecycle.MutableLiveData
 import androidx.preference.PreferenceManager
 import com.example.wavemap.measures.WaveSampler
 import com.example.wavemap.utilities.Constants
@@ -19,11 +18,11 @@ abstract class MeasureViewModel(application : Application) : AndroidViewModel(ap
     var limit : Int? = null
 
     suspend fun measure() {
-        sampler?.sampleAndStore()
+        sampler.sampleAndStore()
     }
 
     suspend fun averageOf(top_left_corner: LatLng, bottom_right_corner: LatLng) : Double? {
-        return sampler?.average(top_left_corner, bottom_right_corner, limit)
+        return sampler.average(top_left_corner, bottom_right_corner, limit)
     }
 
     fun loadSettingsPreferences() {

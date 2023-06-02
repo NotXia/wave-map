@@ -27,6 +27,8 @@ import com.example.wavemap.utilities.Constants
 import com.example.wavemap.utilities.LocationUtils
 import com.example.wavemap.utilities.LocationUtils.Companion.metersToLatitudeOffset
 import com.example.wavemap.utilities.LocationUtils.Companion.metersToLongitudeOffset
+import com.example.wavemap.utilities.Misc.Companion.scaleToInterval
+import com.example.wavemap.utilities.Misc.Companion.scaleToRange
 import com.google.android.gms.location.*
 import com.google.android.gms.maps.CameraUpdateFactory
 import com.google.android.gms.maps.GoogleMap
@@ -58,6 +60,8 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
         MutableLiveData<LatLng>()
     }
 
+
+
     suspend fun changeViewModel(view_model : MeasureViewModel) {
         this.view_model = view_model
         refreshMap()
@@ -74,6 +78,8 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
         }
     }
 
+
+
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?) : View? {
         return inflater.inflate(R.layout.fragment_map, container, false)
     }
@@ -88,43 +94,48 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
             this.google_map = google_map
 
             if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
-                initMap()
+                lifecycleScope.launch {
+                    initMap()
+                }
             }
         }
     }
 
 
-    private fun initMap() {
+
+    /**
+     * Init
+     * */
+
+    private suspend fun initMap() {
         if ( ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ) {
             throw SecurityException("Missing ACCESS_FINE_LOCATION permission")
         }
 
-        GlobalScope.launch {
-            withContext(Dispatchers.Main) {
-                initLocationRetriever()
-                var current_location : LatLng = LocationUtils.getCurrent(activity as Activity)
+        initLocationRetriever()
+        val current_location : LatLng = LocationUtils.getCurrent(activity as Activity)
 
-                google_map.isMyLocationEnabled = true;
-                google_map.moveCamera(CameraUpdateFactory.newLatLngZoom(current_location, 18f))
-                center = current_location
+        withContext(Dispatchers.Main) {
+            google_map.isMyLocationEnabled = true
+            google_map.moveCamera(CameraUpdateFactory.newLatLngZoom(current_location, 18f))
+            center = current_location
 
-                google_map.setOnCameraMoveListener {
-                    markers.forEach { it.remove() }
-                    markers = mutableListOf()
-                }
+            google_map.setOnCameraMoveListener {
+                markers.forEach { it.remove() }
+                markers = mutableListOf()
+            }
 
-                google_map.setOnCameraIdleListener {
-                    updateTilesLength()
-                    lifecycleScope.launch {
-                        refreshMap()
-                    }
+            google_map.setOnCameraIdleListener {
+                updateTilesLength()
+                lifecycleScope.launch {
+                    refreshMap()
                 }
             }
         }
     }
 
     private suspend fun initLocationRetriever() : Unit = suspendCoroutine { cont ->
-        GlobalScope.launch {
+        lifecycleScope.launch {
             if ( ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ) {
                 return@launch cont.resumeWithException( SecurityException("Missing ACCESS_FINE_LOCATION permission") )
             }
@@ -139,7 +150,6 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
 
                     val location = locationResult.lastLocation as Location
                     val tile = getReferenceTileContaining(LatLng(location.latitude, location.longitude))
-
                     if (current_tile.value != tile) {
                         current_tile.value = tile
                     }
@@ -147,13 +157,14 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
             }
             val fused_location_provider = LocationServices.getFusedLocationProviderClient(requireActivity())
 
-            if (LocationUtils.getCurrent(activity as Activity) != null) { // A location is already available
-                // There is no need to wait for a LocationResult, setup for location updates and exit immediately
+            try {
+                LocationUtils.getCurrent(requireContext())
+                // A location is already available, there is no need to wait for a LocationResult, setup for location updates and exit immediately
                 fused_location_provider.requestLocationUpdates(location_options, location_callback, Looper.getMainLooper())
                 cont.resume(Unit)
             }
-            else {
-                // Since there is no location available, wait for a location before exiting
+            catch (err: RuntimeException) {
+                // A location is not available, wait for a LocationResult
                 fused_location_provider.requestLocationUpdates(
                     location_options,
                     object : LocationCallback() {
@@ -171,42 +182,11 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
         }
     }
 
-    /* Scales the value of an interval to another */
-    private fun scaleToInterval(value: Double, source_range: Pair<Double, Double>, target_range: Pair<Double, Double>) : Double {
-        var real_source = source_range
-        var real_value = value
 
-        // Range extremes have to be inverted and value rescaled
-        if (source_range.first > source_range.second) {
-            real_value = if (value > (source_range.first - source_range.second) / 2) {
-                value + (source_range.first - source_range.second) - 2 * (value - source_range.second)
-            }
-            else {
-                value - (source_range.first - source_range.second) + 2 * (source_range.first - value)
-            }
-            real_source = Pair(source_range.second, source_range.first)
-        }
 
-        if (real_value <= real_source.first) { return target_range.first }
-        if (real_value >= real_source.second) { return target_range.second }
-
-        val source_distance = (real_source.second - real_source.first)
-        val target_distance = (target_range.second - target_range.first)
-        return ( ( ((real_value - real_source.first) * target_distance) / source_distance ) + target_range.first )
-    }
-
-    /* Scales a value in a discrete interval */
-    private fun scaleToRange(value: Double, range: Pair<Double, Double>, range_size: Int) : Double {
-        if (range_size == 1) { return range.second }
-
-        val range_value : Double = round(abs(range.second - range.first) / (range_size-1))
-        var out = value + range_value/2
-        out -= out % range_value
-
-        if (out <= range.first) { return range.first }
-        if (out >= range.second) { return range.second }
-        return out
-    }
+    /**
+     * Drawing
+     * */
 
     private fun drawTile(top_left_corner: LatLng) {
         val top_right_corner = LatLng(top_left_corner.latitude, top_left_corner.longitude+metersToLongitudeOffset(tile_length_meters, top_left_corner.latitude))
@@ -219,9 +199,9 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
 
             var color = ColorUtils.setAlphaComponent(0, 0)
             if (tile_average != null) {
-                var hue = scaleToInterval(tile_average!!, view_model.values_scale!!, Constants.HUE_MEASURE_RANGE)
+                var hue = scaleToInterval(tile_average, view_model.values_scale!!, Constants.HUE_MEASURE_RANGE)
                 hue = scaleToRange(hue, Constants.HUE_MEASURE_RANGE, view_model.range_size)
-                color = ColorUtils.setAlphaComponent(ColorUtils.HSLToColor(floatArrayOf(hue.toFloat(), 1f, 0.6f)), 100);
+                color = ColorUtils.setAlphaComponent(ColorUtils.HSLToColor(floatArrayOf(hue.toFloat(), 1f, 0.6f)), 100)
             }
 
             withContext(Dispatchers.Main) {
@@ -236,38 +216,42 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
 
                 // Adds a label with the value to the tile
                 if (tile_average != null && pref_manager.getBoolean("show_tile_label", true)) {
-                    val text = "${tile_average.toInt()} ${view_model.measure_unit}"
-                    val textPaint = Paint()
-                    textPaint.textSize = 35f
-                    var width = textPaint.measureText(text)
-                    var height = textPaint.textSize
-
-                    // Reduce font size if there is not enough space
-                    while (google_map.projection.toScreenLocation(top_right_corner).x - google_map.projection.toScreenLocation(top_left_corner).x < width && textPaint.textSize > 5f) {
-                        textPaint.textSize -= 2f
-                        width = textPaint.measureText(text)
-                        height = textPaint.textSize
-                    }
-
-                    val image = Bitmap.createBitmap(width.toInt(), height.toInt(), Bitmap.Config.ARGB_8888)
-                    val canvas = Canvas(image)
-                    canvas.drawText(text, 0f, canvas.height.toFloat(), textPaint)
-
-                    val marker = google_map.addMarker(
-                        MarkerOptions()
-                            .position(top_right_corner)
-                            .icon(BitmapDescriptorFactory.fromBitmap(image))
-                            .anchor(1f, 0f)
-                    )
-                    if (marker != null) { markers.add(marker) }
+                    drawTileLabel(top_left_corner, "${tile_average.toInt()} ${view_model.measure_unit}")
                 }
             }
         }
     }
 
-    /**
-     * Fills the screen with tiles offsetted from the center
-     * */
+    private fun drawTileLabel(top_left_corner: LatLng, text: String) {
+        val textPaint = Paint()
+        textPaint.textSize = 35f
+        var width = textPaint.measureText(text)
+        var height = textPaint.textSize
+        val top_right_corner = LatLng(top_left_corner.latitude, top_left_corner.longitude+metersToLongitudeOffset(tile_length_meters, top_left_corner.latitude))
+        val tile_size = google_map.projection.toScreenLocation(top_right_corner).x - google_map.projection.toScreenLocation(top_left_corner).x
+
+        // Reduces font size if there is not enough space
+        while (tile_size < width &&
+                textPaint.textSize > 5f) {
+            textPaint.textSize -= 2f
+            width = textPaint.measureText(text)
+            height = textPaint.textSize
+        }
+
+        val image = Bitmap.createBitmap(width.toInt(), height.toInt(), Bitmap.Config.ARGB_8888)
+        val canvas = Canvas(image)
+        canvas.drawText(text, 0f, canvas.height.toFloat(), textPaint)
+
+        val marker = google_map.addMarker(
+            MarkerOptions()
+                .position(top_right_corner)
+                .icon(BitmapDescriptorFactory.fromBitmap(image))
+                .anchor(1f, 0f)
+        )
+        if (marker != null) { markers.add(marker) }
+    }
+
+    /* Fills the screen with tiles offset from the center */
     private fun fillWithTiles() {
         // TODO handle wrap up zone
         val top_left_visible = LatLng(google_map.projection.visibleRegion.latLngBounds.northeast.latitude, google_map.projection.visibleRegion.latLngBounds.southwest.longitude)
@@ -286,40 +270,36 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
         }
     }
 
-    private fun getReferenceTileContaining(position: LatLng) : LatLng {
-        // Difference from the current top-left corner and the center
-        val lat_diff_to_center = position.latitude - top_left_center.latitude
-        val lon_diff_to_center = position.longitude - top_left_center.longitude
-
-        // Number of tiles to skip with respect to latitude and longitude
-        var lat_offset_times = ceil( (lat_diff_to_center / metersToLatitudeOffset(tile_length_meters)) )
-        var lon_offset_times = floor( (lon_diff_to_center / metersToLongitudeOffset(tile_length_meters, position.latitude)) )
-
-        // Top-left corner from which begin the generation of tiles
-        return LatLng(
-            top_left_center.latitude + (metersToLatitudeOffset(tile_length_meters * lat_offset_times)),
-            top_left_center.longitude + (metersToLongitudeOffset(tile_length_meters * lon_offset_times, position.latitude))
-        )
-    }
-
     private fun updateTilesLength() {
         val zoom_level = google_map.cameraPosition.zoom
 
         // Selects new tile length
-        if (zoom_level < 5) {
-            tile_length_meters = 1000000.0
-        }
-        else if (zoom_level < 21) {
-            tile_length_meters = 5.0 * (2.0).pow(20.0 - round(zoom_level) + 1.0)
-        }
-        else {
-            tile_length_meters = 2.0
+        tile_length_meters = when {
+            zoom_level < 5 -> 1000000.0
+            zoom_level < 21 -> 5.0 * (2.0).pow(20.0 - round(zoom_level) + 1.0)
+            else -> 2.0
         }
 
         // Realigns top-left corner of the center tile
         top_left_center = LatLng(
             center.latitude + metersToLatitudeOffset(tile_length_meters/2),
             center.longitude - metersToLongitudeOffset(tile_length_meters/2, center.latitude + metersToLatitudeOffset(tile_length_meters/2))
+        )
+    }
+
+    private fun getReferenceTileContaining(position: LatLng) : LatLng {
+        // Difference from the current top-left corner and the center tile
+        val lat_diff_to_center = position.latitude - top_left_center.latitude
+        val lon_diff_to_center = position.longitude - top_left_center.longitude
+
+        // Number of tiles to skip from the center tile
+        val lat_offset_times = ceil( (lat_diff_to_center / metersToLatitudeOffset(tile_length_meters)) )
+        val lon_offset_times = floor( (lon_diff_to_center / metersToLongitudeOffset(tile_length_meters, position.latitude)) )
+
+        // Top-left corner from which begin the generation of tiles
+        return LatLng(
+            top_left_center.latitude + (metersToLatitudeOffset(tile_length_meters * lat_offset_times)),
+            top_left_center.longitude + (metersToLongitudeOffset(tile_length_meters * lon_offset_times, position.latitude))
         )
     }
 }

@@ -23,7 +23,6 @@ import android.widget.Toast
 import androidx.activity.result.ActivityResultLauncher
 import androidx.activity.result.contract.ActivityResultContracts
 import androidx.activity.viewModels
-import androidx.appcompat.app.AlertDialog
 import androidx.appcompat.app.AppCompatActivity
 import androidx.core.content.ContextCompat
 import androidx.fragment.app.DialogFragment
@@ -31,6 +30,7 @@ import androidx.fragment.app.commit
 import androidx.lifecycle.lifecycleScope
 import androidx.preference.PreferenceManager
 import com.example.wavemap.R
+import com.example.wavemap.dialogs.MeasureFilterDialog
 import com.example.wavemap.dialogs.MissingMinimumPermissionsDialog
 import com.example.wavemap.dialogs.OpenSettingsDialog
 import com.example.wavemap.services.BackgroundScanService
@@ -99,7 +99,7 @@ class MainActivity : AppCompatActivity() {
 
         pref_manager = PreferenceManager.getDefaultSharedPreferences(baseContext)
 
-        permissions_check_and_init = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { _ ->
+        permissions_check_and_init = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
             // Checks if the minimum required permissions are granted
             if (!Permissions.minimumRequired.all{ permission -> ContextCompat.checkSelfPermission(baseContext, permission) == PackageManager.PERMISSION_GRANTED }) {
                 val dialog = MissingMinimumPermissionsDialog()
@@ -122,11 +122,10 @@ class MainActivity : AppCompatActivity() {
                         measureOne(curr_sampler)
                     }
                     catch (err: Exception) {
-                        // TODO Error handling
+                        Log.e("measure", "User triggered measure: $err")
                         withContext(Dispatchers.Main) {
-                            Toast.makeText(baseContext, ":(", Toast.LENGTH_SHORT).show()
+                            Toast.makeText(baseContext, getString(R.string.error_occurred), Toast.LENGTH_SHORT).show()
                         }
-                        Log.e("measure", "User triggered measure")
                     }
                 }
             }
@@ -135,7 +134,6 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-
         permissions_check_and_init.launch(Permissions.allRequired)
     }
 
@@ -144,23 +142,26 @@ class MainActivity : AppCompatActivity() {
 
         try {
             curr_sampler.view_model.loadSettingsPreferences()
-            lifecycleScope.launch {
-                map_fragment.refreshMap()
-            }
+            lifecycleScope.launch { map_fragment.refreshMap() }
             startPeriodicScan()
             BackgroundScanService.stop(this)
         }
         catch (err : Exception) {
             Log.e("resume", "$err")
-            // TODO: Handle error
         }
     }
 
     override fun onPause() {
         super.onPause()
-        stopPeriodicScan()
-        to_dismiss_dialogs.forEach { try { it.dismiss() } catch (err: Exception) { /* Empty */ } }
-        BackgroundScanService.start(this)
+
+        try {
+            stopPeriodicScan()
+            to_dismiss_dialogs.forEach { try { it.dismiss() } catch (err: Exception) { /* Empty */ } }
+            BackgroundScanService.start(this)
+        }
+        catch (err : Exception) {
+            Log.e("pause", "$err")
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
@@ -196,7 +197,7 @@ class MainActivity : AppCompatActivity() {
         measure_spinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, available_samplers.map{ it.label })
         measure_spinner.setSelection(0, false) // Selects the first element of the spinner (before adding the listener)
         measure_spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener{
-            override fun onNothingSelected(parent: AdapterView<*>?) { }
+            override fun onNothingSelected(parent: AdapterView<*>?) {}
 
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
                 curr_sampler = available_samplers[position]
@@ -224,27 +225,23 @@ class MainActivity : AppCompatActivity() {
             val queryable_model = curr_sampler.view_model as QueryableMeasureViewModel
 
             lifecycleScope.launch(Dispatchers.IO) {
-                val queries = ( listOf(Pair(getString(R.string.remove_filter), null)) + queryable_model.listQueries() )
+                val queries = listOf(Pair(getString(R.string.remove_filter), null)) + queryable_model.listQueries()
                 val items : Array<CharSequence> = queries.map{ it.first }.toTypedArray()
 
                 withContext(Dispatchers.Main) {
-                    val dialog_builder : AlertDialog.Builder = AlertDialog.Builder(this@MainActivity)
-
-                    dialog_builder.setTitle(getString(R.string.filter_measures))
-                    dialog_builder.setItems(items) { _, index ->
+                    MeasureFilterDialog(items){ index ->
                         lifecycleScope.launch {
                             queryable_model.changeQuery(queries[index].second)
                             map_fragment.refreshMap()
                         }
-                    }
-                    dialog_builder.create().show()
+                    }.show(supportFragmentManager, MeasureFilterDialog.TAG)
                 }
             }
         }
     }
 
     private fun initTileChangeListener() {
-        map_fragment.current_tile.observe(this) { new_tile ->
+        map_fragment.current_tile.observe(this) {
             if (pref_manager.getBoolean("tile_change_scan", false)) {
                 autoTriggeredMeasure()
                 resetPeriodicScan()
@@ -260,14 +257,18 @@ class MainActivity : AppCompatActivity() {
     private suspend fun measureOne(sampler: SamplerHandler) {
         if (sampler.currently_measuring) { return } // The sampler is already measuring
         sampler.currently_measuring = true
+        var error : Exception? = null
 
         if (curr_sampler.view_model == sampler.view_model) {
             withContext(Dispatchers.Main) { disableMeasureFab() }
         }
 
-        sampler.view_model.measure()
+        try {
+            sampler.view_model.measure()
+        }
+        catch (err: Exception) { error = err }
 
-        // Execute only if, at the end of the measure, the selected sampler is still this one (user may have changed the sampler type in the meantime)
+        // Execute only if, at the end of the measure, the selected sampler is still this one (user may have changed the sampler in the meantime)
         if (curr_sampler.view_model == sampler.view_model) {
             withContext(Dispatchers.Main) {
                 map_fragment.refreshMap()
@@ -276,6 +277,8 @@ class MainActivity : AppCompatActivity() {
         }
 
         sampler.currently_measuring = false
+
+        if (error != null) { throw error }
     }
 
     private fun userTriggeredMeasure() {
@@ -291,7 +294,7 @@ class MainActivity : AppCompatActivity() {
                     measureOne(it)
                 }
                 catch (err: Exception) {
-                    Log.e("measure", "Auto triggered measure (${it.view_model})")
+                    Log.e("measure", "Auto triggered measure (${it.view_model}) $err")
                 }
             }
         }
@@ -337,7 +340,7 @@ class MainActivity : AppCompatActivity() {
         fab_start_measure.isClickable = true
 
         val primary_color = TypedValue()
-        theme.resolveAttribute(androidx.transition.R.attr.colorPrimary, primary_color, true);
+        theme.resolveAttribute(androidx.transition.R.attr.colorPrimary, primary_color, true)
         fab_start_measure.backgroundTintList = ColorStateList.valueOf(primary_color.data)
         if (fab_start_measure_loading_anim != null) {
             fab_start_measure_loading_anim?.removeAllListeners()

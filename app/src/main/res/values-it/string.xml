@@ -11,6 +11,8 @@
     <string name="filter_measures">Filtra misure</string>
     <string name="remove_filter">Rimuovi filtro</string>
 
+    <string name="error_occurred">Si è verificato un errore</string>
+
     <!-- Settings -->
     <string name="sampler_settings">Opzioni misuratori</string>
     <string name="scan_settings">Opzioni scansione</string>

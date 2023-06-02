@@ -10,6 +10,8 @@
     <string name="filter_measures">Filter measures</string>
     <string name="remove_filter">Remove filter</string>
 
+    <string name="error_occurred">An error occurred</string>
+
     <!-- Settings -->
     <string name="sampler_settings">Sampler options</string>
     <string name="scan_settings">Scan options</string>
