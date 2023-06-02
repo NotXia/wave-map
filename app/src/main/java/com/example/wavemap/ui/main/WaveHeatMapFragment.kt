@@ -274,10 +274,16 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
     }
 
     private fun fillAreaWithTiles(top_left: LatLng, bottom_right: LatLng) {
-        // Fill the screen with tiles
+        // For more tolerance
+        val real_bottom_right = LatLng(
+            bottom_right.latitude - metersToLatitudeOffset(tile_length_meters),
+            bottom_right.longitude + metersToLongitudeOffset(tile_length_meters, bottom_right.latitude)
+        )
         var current_tile = top_left
-        while (current_tile.latitude >= bottom_right.latitude) {
-            while (current_tile.longitude <= bottom_right.longitude) {
+
+        // Fill the screen with tiles
+        while (current_tile.latitude >= real_bottom_right.latitude) {
+            while (current_tile.longitude <= real_bottom_right.longitude) {
                 drawTile(current_tile)
 
                 val new_longitude = current_tile.longitude + metersToLongitudeOffset(tile_length_meters, current_tile.latitude)
