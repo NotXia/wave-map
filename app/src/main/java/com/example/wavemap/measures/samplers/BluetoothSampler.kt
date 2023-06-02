@@ -2,9 +2,7 @@ package com.example.wavemap.measures.samplers
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.bluetooth.BluetoothAdapter
-import android.bluetooth.BluetoothDevice
-import android.bluetooth.BluetoothManager
+import android.bluetooth.*
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
@@ -23,7 +21,6 @@ import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import java.lang.Integer.min
 import kotlin.coroutines.resume
-import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
 
@@ -38,27 +35,72 @@ class BluetoothSampler : WaveSampler {
         this.db = db
     }
 
-    override suspend fun sample() : List<WaveMeasure> = suspendCoroutine { cont ->
+    override suspend fun sample() : List<WaveMeasure> {
         if ( ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED ) {
-            return@suspendCoroutine cont.resumeWithException( SecurityException("Missing BLUETOOTH_SCAN permission") )
+            throw SecurityException("Missing BLUETOOTH_SCAN permission")
         }
         if ( ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED ) {
-            return@suspendCoroutine cont.resumeWithException( SecurityException("Missing BLUETOOTH_CONNECT permissions") )
+            throw SecurityException("Missing BLUETOOTH_CONNECT permissions")
         }
         if ( ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ) {
-            return@suspendCoroutine cont.resumeWithException( SecurityException("Missing ACCESS_FINE_LOCATION permissions") )
+            throw SecurityException("Missing ACCESS_FINE_LOCATION permissions")
         }
 
-        var bt_list = mutableListOf<MeasureTable>()
+        return sampleWithDiscovery() + sampleConnected()
+    }
+
+    @SuppressLint("MissingPermission")
+    private suspend fun sampleConnected() : List<WaveMeasure> = suspendCoroutine { cont ->
+        val bt_manager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+        val pairedDevices: Set<BluetoothDevice>? = bt_manager.adapter?.bondedDevices
+        val bt_list = mutableListOf<MeasureTable>()
         val timestamp = System.currentTimeMillis()
 
-        lateinit var bt_receiver : BroadcastReceiver
+        suspend fun getRSSI(device: BluetoothDevice) : Int? = suspendCoroutine { cont ->
+            device.connectGatt(context, false, object : BluetoothGattCallback() {
+                override fun onReadRemoteRssi(gatt: BluetoothGatt?, rssi: Int, status: Int) {
+                    super.onReadRemoteRssi(gatt, rssi, status)
+                    cont.resume(rssi)
+                }
 
-        bt_receiver = object : BroadcastReceiver() {
+                override fun onConnectionStateChange(gatt: BluetoothGatt?, status: Int, newState: Int) {
+                    when (newState) {
+                        BluetoothProfile.STATE_CONNECTED -> gatt?.readRemoteRssi()
+                        else -> cont.resume(null)
+                    }
+                }
+            })
+        }
+
+        GlobalScope.launch {
+            pairedDevices?.forEach { device ->
+                val rssi = getRSSI(device)
+
+                if (rssi != null) {
+                    val current_location: LatLng = LocationUtils.getCurrent(context)
+
+                    bt_list.add( MeasureTable(0, MeasureType.BLUETOOTH,
+                        rssi.toDouble(), timestamp, current_location.latitude, current_location.longitude,
+                        device.address ?: "")
+                    )
+                    db.bssidDAO().insert( BSSIDTable(device.address, if (device.name != null) device.name else device.address, BSSIDType.BLUETOOTH) )
+                }
+            }
+
+            cont.resume(bt_list)
+        }
+    }
+
+    @SuppressLint("MissingPermission")
+    private suspend fun sampleWithDiscovery() : List<WaveMeasure> = suspendCoroutine { cont ->
+        val bt_list = mutableListOf<MeasureTable>()
+        val timestamp = System.currentTimeMillis()
+
+        val bt_receiver = object : BroadcastReceiver() {
             @SuppressLint("MissingPermission")
             override fun onReceive(context: Context, intent: Intent) {
                 if (intent.action == BluetoothAdapter.ACTION_DISCOVERY_FINISHED) {
-                    context.unregisterReceiver(bt_receiver)
+                    context.unregisterReceiver(this)
                     return cont.resume( bt_list )
                 }
 
