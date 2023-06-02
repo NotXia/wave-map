@@ -53,6 +53,7 @@
     <!-- Dialog -->
     <string name="exit">Esci</string>
     <string name="cancel">Annulla</string>
+    <string name="search">Cerca</string>
 
     <string name="missing_minimum_permissions">Permessi insufficienti</string>
     <string name="missing_minimum_permissions_desc">I permessi di posizione sono richiesti per il corretto funzionamento dell\'app</string>

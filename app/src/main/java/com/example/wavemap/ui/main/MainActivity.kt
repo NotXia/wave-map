@@ -226,7 +226,7 @@ class MainActivity : AppCompatActivity() {
 
             lifecycleScope.launch(Dispatchers.IO) {
                 val queries = listOf(Pair(getString(R.string.remove_filter), null)) + queryable_model.listQueries()
-                val items : Array<CharSequence> = queries.map{ it.first }.toTypedArray()
+                val items : ArrayList<CharSequence> = queries.map{ it.first }.toCollection(ArrayList())
 
                 withContext(Dispatchers.Main) {
                     MeasureFilterDialog(items){ index ->

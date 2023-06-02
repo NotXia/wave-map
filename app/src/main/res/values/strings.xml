@@ -51,6 +51,7 @@
     <!-- Dialog -->
     <string name="exit">Exit</string>
     <string name="cancel">Cancel</string>
+    <string name="search">Search</string>
 
     <string name="missing_minimum_permissions">Missing permissions</string>
     <string name="missing_minimum_permissions_desc">Permission to access location is required to use the app</string>
