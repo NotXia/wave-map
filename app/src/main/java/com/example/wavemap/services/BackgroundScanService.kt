@@ -19,7 +19,6 @@ import com.example.wavemap.db.WaveDatabase
 import com.example.wavemap.measures.WaveSampler
 import com.example.wavemap.measures.samplers.BluetoothSampler
 import com.example.wavemap.measures.samplers.LTESampler
-import com.example.wavemap.measures.samplers.NoiseSampler
 import com.example.wavemap.measures.samplers.WiFiSampler
 import com.example.wavemap.utilities.Constants
 import com.google.android.gms.location.*
@@ -77,7 +76,7 @@ class BackgroundScanService : Service() {
         samplers = arrayOf(
             WiFiSampler(applicationContext, null, db),
             LTESampler(applicationContext, db),
-            NoiseSampler(applicationContext, db),
+//            NoiseSampler(applicationContext, db),
             BluetoothSampler(applicationContext, null, db)
         )
         pref_manager = PreferenceManager.getDefaultSharedPreferences(applicationContext)
@@ -166,9 +165,7 @@ class BackgroundScanService : Service() {
         try {
             fused_location_provider.removeLocationUpdates(location_callback)
         }
-        catch (err : RuntimeException) {
-
-        }
+        catch (err : RuntimeException) { /* Empty */ }
     }
 
     private fun sendUncoveredAreaNotification() {
