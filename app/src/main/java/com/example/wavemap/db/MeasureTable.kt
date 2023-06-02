@@ -20,26 +20,38 @@ data class MeasureTable (
 
 @Dao
 interface MeasureDAO {
+    companion object {
+        private const val coordinate_is_inside_tile: String =
+            "(" +
+            "(latitude BETWEEN :bot_right_lat AND :top_left_lat) AND " +
+            "      ( " +
+            "         ( " +
+            "            ( (:top_left_lon >= 0 AND :bot_right_lon >= 0) OR (:top_left_lon < 0 AND :bot_right_lon < 0) OR (:top_left_lon < 0 AND :bot_right_lon >= 0) ) AND " +
+            "            (longitude BETWEEN :top_left_lon AND :bot_right_lon) " +
+            "         ) OR " +
+            "         (" + // Longitude at wrap-up point (somewhere in the Pacific Ocean)
+            "            :top_left_lon > 0 AND :bot_right_lon < 0 AND " +
+            "            ( " +
+            "               (longitude BETWEEN :top_left_lon AND 180) OR " +
+            "               (longitude BETWEEN -180 AND :bot_right_lon) " +
+            "             ) " +
+            "          ) " +
+            "      )" +
+            ")"
+    }
+
     @Query(
         "SELECT * FROM measures " +
         "WHERE type = :type AND " +
-        "      (latitude BETWEEN :bot_right_lat AND :top_left_lat) AND " +
-        "      ( " +
-        "         ( " +
-        "            ( (:top_left_lon >= 0 AND :bot_right_lon >= 0) OR (:top_left_lon < 0 AND :bot_right_lon < 0) OR (:top_left_lon < 0 AND :bot_right_lon >= 0) ) AND " +
-        "            (longitude BETWEEN :top_left_lon AND :bot_right_lon) " +
-        "         ) OR " +
-        "         (" + // Longitude at wrap-up point (somewhere in the Pacific Ocean)
-        "            :top_left_lon > 0 AND :bot_right_lon < 0 AND " +
-        "            ( " +
-        "               (longitude BETWEEN :top_left_lon AND 180) OR " +
-        "               (longitude BETWEEN -180 AND :bot_right_lon) " +
-        "             ) " +
-        "          ) " +
-        "      ) " +
-        "ORDER BY timestamp DESC " +
-        "LIMIT :limit"
+        "      $coordinate_is_inside_tile AND" +
+        "      timestamp IN (SELECT timestamp " +
+        "                    FROM measures " +
+        "                    WHERE type = :type AND" +
+        "                          $coordinate_is_inside_tile" +
+        "                    ORDER BY timestamp " +
+        "                    DESC LIMIT :limit) "
     )
+    /* Retrieves, for a given tile, the most recent measurements (measures with the same timestamp are all considered) */
     fun get(type: MeasureType, top_left_lat: Double, top_left_lon: Double, bot_right_lat: Double, bot_right_lon: Double, limit: Int) : List<MeasureTable>
 
     @Insert

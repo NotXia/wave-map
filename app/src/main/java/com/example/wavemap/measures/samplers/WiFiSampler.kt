@@ -44,12 +44,13 @@ class WiFiSampler : WaveSampler {
     override suspend fun sample() : List<WaveMeasure> = suspendCoroutine { cont ->
         GlobalScope.launch {
             var measures = listOf<WaveMeasure>()
+            val timestamp = System.currentTimeMillis()
 
-            val connected_wifi = sampleCurrentlyConnectedWiFi()
+            val connected_wifi = sampleCurrentlyConnectedWiFi(timestamp)
             if (connected_wifi != null) { measures = measures + listOf(connected_wifi) }
 
             try {
-                measures = measures + sampleWithWiFiScanner()
+                measures = measures + sampleWithWiFiScanner(timestamp)
             }
             catch (err : MeasureException) { /* Cannot start wifi scan */ }
 
@@ -73,7 +74,7 @@ class WiFiSampler : WaveSampler {
         }
     }
 
-    private suspend fun sampleCurrentlyConnectedWiFi() : WaveMeasure? = suspendCoroutine { cont ->
+    private suspend fun sampleCurrentlyConnectedWiFi(timestamp: Long) : WaveMeasure? = suspendCoroutine { cont ->
         if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) {
             val request = NetworkRequest.Builder().addTransportType(NetworkCapabilities.TRANSPORT_WIFI).build()
             val connectivity_manager : ConnectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
@@ -88,7 +89,6 @@ class WiFiSampler : WaveSampler {
                         val wifi_info = networkCapabilities.transportInfo as WifiInfo?
                             ?: return@launch cont.resume( null )
                         val current_location: LatLng = LocationUtils.getCurrent(context)
-                        val timestamp = System.currentTimeMillis()
 
                         db.bssidDAO().insert( BSSIDTable(wifi_info.bssid, createWiFiName(wifi_info.ssid, wifi_info.bssid, wifi_info.frequency), BSSIDType.WIFI) )
                         try {
@@ -110,7 +110,6 @@ class WiFiSampler : WaveSampler {
             GlobalScope.launch {
                 val wifi_info = (context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager).connectionInfo
                 val current_location: LatLng = LocationUtils.getCurrent(context)
-                val timestamp = System.currentTimeMillis()
 
                 db.bssidDAO().insert( BSSIDTable(wifi_info.bssid, createWiFiName(wifi_info.ssid, wifi_info.bssid, wifi_info.frequency), BSSIDType.WIFI) )
                 cont.resume(
@@ -121,7 +120,7 @@ class WiFiSampler : WaveSampler {
 
     }
 
-    private suspend fun sampleWithWiFiScanner() : List<WaveMeasure> = suspendCoroutine { cont ->
+    private suspend fun sampleWithWiFiScanner(timestamp: Long) : List<WaveMeasure> = suspendCoroutine { cont ->
         val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
 
         val wifiScanReceiver = object : BroadcastReceiver() {
@@ -138,7 +137,6 @@ class WiFiSampler : WaveSampler {
                     val current_location: LatLng = LocationUtils.getCurrent(context)
                     val results = wifiManager.scanResults
                     var wifi_list = mutableListOf<MeasureTable>()
-                    val timestamp = System.currentTimeMillis()
 
                     for (wifi in results) {
                         val ssid = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) wifi.wifiSsid.toString().drop(1).dropLast(1).trim() else wifi.SSID
@@ -178,25 +176,16 @@ class WiFiSampler : WaveSampler {
     }
 
     override suspend fun retrieve(top_left_corner: LatLng, bottom_right_corner: LatLng, limit: Int?) : List<WaveMeasure> {
-        var measures : List<WaveMeasure> =
-            db.measureDAO().get(MeasureType.WIFI, top_left_corner.latitude, top_left_corner.longitude, bottom_right_corner.latitude, bottom_right_corner.longitude, -1)
-
         if (bssid == null) {
-            val measures_by_timestamp = measures.groupBy { it.timestamp }
-            val timestamps = measures_by_timestamp.keys.toList().sortedDescending()
-            measures = mutableListOf()
-
-            // Gets the highest measure for each timestamp (up to limit)
-            for (i in 0 until min(limit ?: timestamps.size, timestamps.size)) {
-                measures.add( measures_by_timestamp[timestamps[i]]!!.maxBy{ it.value } )
-            }
+            return (
+                db.measureDAO().get(MeasureType.WIFI, top_left_corner.latitude, top_left_corner.longitude, bottom_right_corner.latitude, bottom_right_corner.longitude, limit ?: -1)
+            )
         }
         else {
-            measures = measures.filter { m -> m.info == bssid }
-
+            var measures = db.measureDAO().get(MeasureType.WIFI, top_left_corner.latitude, top_left_corner.longitude, bottom_right_corner.latitude, bottom_right_corner.longitude, -1)
+            measures = measures.filter{ m -> m.info == bssid }
             if (limit != null) { measures = measures.subList(0, min(limit, measures.size)) }
+            return measures
         }
-
-        return measures
     }
 }

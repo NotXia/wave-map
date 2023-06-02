@@ -19,7 +19,6 @@ import com.example.wavemap.utilities.LocationUtils
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import java.lang.Integer.min
 import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
@@ -45,16 +44,16 @@ class BluetoothSampler : WaveSampler {
         if ( ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ) {
             throw SecurityException("Missing ACCESS_FINE_LOCATION permissions")
         }
+        val timestamp = System.currentTimeMillis()
 
-        return sampleWithDiscovery() + sampleConnected()
+        return sampleWithDiscovery(timestamp) + sampleConnected(timestamp)
     }
 
     @SuppressLint("MissingPermission")
-    private suspend fun sampleConnected() : List<WaveMeasure> = suspendCoroutine { cont ->
+    private suspend fun sampleConnected(timestamp: Long) : List<WaveMeasure> = suspendCoroutine { cont ->
         val bt_manager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
         val pairedDevices: Set<BluetoothDevice>? = bt_manager.adapter?.bondedDevices
         val bt_list = mutableListOf<MeasureTable>()
-        val timestamp = System.currentTimeMillis()
 
         suspend fun getRSSI(device: BluetoothDevice) : Int? = suspendCoroutine { cont ->
             device.connectGatt(context, false, object : BluetoothGattCallback() {
@@ -92,9 +91,8 @@ class BluetoothSampler : WaveSampler {
     }
 
     @SuppressLint("MissingPermission")
-    private suspend fun sampleWithDiscovery() : List<WaveMeasure> = suspendCoroutine { cont ->
+    private suspend fun sampleWithDiscovery(timestamp: Long) : List<WaveMeasure> = suspendCoroutine { cont ->
         val bt_list = mutableListOf<MeasureTable>()
-        val timestamp = System.currentTimeMillis()
 
         val bt_receiver = object : BroadcastReceiver() {
             @SuppressLint("MissingPermission")
@@ -141,25 +139,16 @@ class BluetoothSampler : WaveSampler {
     }
 
     override suspend fun retrieve(top_left_corner: LatLng, bottom_right_corner: LatLng, limit: Int?) : List<WaveMeasure> {
-        var measures : List<WaveMeasure> =
-            db.measureDAO().get(MeasureType.BLUETOOTH, top_left_corner.latitude, top_left_corner.longitude, bottom_right_corner.latitude, bottom_right_corner.longitude, -1)
-
         if (device_name == null) {
-            val measures_by_timestamp = measures.groupBy { it.timestamp }
-            val timestamps = measures_by_timestamp.keys.toList().sortedDescending()
-            measures = mutableListOf()
-
-            // Gets the highest measure for each timestamp (up to limit)
-            for (i in 0 until min(limit ?: timestamps.size, timestamps.size)) {
-                measures.add( measures_by_timestamp[timestamps[i]]!!.maxBy{ it.value } )
-            }
+            return (
+                db.measureDAO().get(MeasureType.BLUETOOTH, top_left_corner.latitude, top_left_corner.longitude, bottom_right_corner.latitude, bottom_right_corner.longitude, limit ?: -1)
+            )
         }
         else {
-            measures = measures.filter { m -> m.info == device_name }
-
-            if (limit != null) { measures = measures.subList(0, min(limit, measures.size)) }
+            var measures = db.measureDAO().get(MeasureType.BLUETOOTH, top_left_corner.latitude, top_left_corner.longitude, bottom_right_corner.latitude, bottom_right_corner.longitude, -1)
+            measures = measures.filter{ m -> m.info == device_name }
+            if (limit != null) { measures = measures.subList(0, Integer.min(limit, measures.size)) }
+            return measures
         }
-
-        return measures
     }
 }
