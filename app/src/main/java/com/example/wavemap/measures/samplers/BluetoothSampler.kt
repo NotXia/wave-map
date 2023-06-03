@@ -23,15 +23,17 @@ import kotlin.coroutines.resume
 import kotlin.coroutines.suspendCoroutine
 
 
-class BluetoothSampler : WaveSampler {
-    private val context : Context
-    private val device_name : String?
-    private val db : WaveDatabase
+class BluetoothSampler(
+    private val context: Context,
+    private val device_name: String?,
+    private val db: WaveDatabase
+) : WaveSampler() {
 
-    constructor(context: Context, device_name: String?, db: WaveDatabase) {
-        this.context = context
-        this.device_name = device_name
-        this.db = db
+    companion object {
+        fun isBluetoothEnabled(context: Context) : Boolean {
+            val manager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager? ?: return false
+            return manager.adapter.isEnabled
+        }
     }
 
     override suspend fun sample() : List<WaveMeasure> {

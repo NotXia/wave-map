@@ -6,13 +6,15 @@ import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
 import android.content.pm.PackageManager
-import android.net.*
+import android.net.ConnectivityManager
+import android.net.Network
+import android.net.NetworkCapabilities
+import android.net.NetworkRequest
 import android.net.wifi.WifiInfo
 import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import androidx.annotation.RequiresApi
 import androidx.core.content.ContextCompat
 import com.example.wavemap.db.*
 import com.example.wavemap.exceptions.MeasureException
@@ -29,18 +31,19 @@ import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
 
-class WiFiSampler : WaveSampler {
-    private val context : Context
-    private val bssid : String?
-    private val db : WaveDatabase
+class WiFiSampler(
+    private val context: Context,
+    private val bssid: String?,
+    private val db: WaveDatabase
+) : WaveSampler() {
 
-    constructor(context: Context, bssid: String?, db: WaveDatabase) {
-        this.context = context
-        this.bssid = bssid
-        this.db = db
+    companion object {
+        fun isWiFiEnabled(context: Context) : Boolean {
+            val manager = context.getSystemService(Context.WIFI_SERVICE) as WifiManager? ?: return false
+            return manager.isWifiEnabled
+        }
     }
 
-    @RequiresApi(Build.VERSION_CODES.S)
     override suspend fun sample() : List<WaveMeasure> = suspendCoroutine { cont ->
         GlobalScope.launch {
             var measures = listOf<WaveMeasure>()
@@ -67,11 +70,7 @@ class WiFiSampler : WaveSampler {
         val frequency_str = if (frequency >= 4900) "5 GHz" else "2.4 GHz"
         val ssid_normalized = ssid.replace("^\"|\"$".toRegex(), "")
 
-        return if (ssid_normalized.isNotEmpty()) {
-            "${ssid_normalized} (${frequency_str})"
-        } else {
-            "${bssid}"
-        }
+        return if (ssid_normalized.isNotEmpty()) "${ssid_normalized} (${frequency_str})" else "${bssid}"
     }
 
     private suspend fun sampleCurrentlyConnectedWiFi(timestamp: Long) : WaveMeasure? = suspendCoroutine { cont ->

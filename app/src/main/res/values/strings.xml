@@ -74,4 +74,7 @@
     <string name="battery_optimization_permission">Allow background activity</string>
     <string name="battery_optimization_permission_desc">It is advisable to allow the application to maintain background activities</string>
 
+    <string name="wifi_not_enabled">Wi-Fi is not enabled</string>
+    <string name="bluetooth_not_enabled">Bluetooth is not enabled</string>
+
 </resources>

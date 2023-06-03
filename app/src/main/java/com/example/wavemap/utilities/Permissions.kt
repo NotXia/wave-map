@@ -62,10 +62,20 @@ class Permissions {
             get() = gps
 
 
-        fun openSettings(context: Context) {
+        fun openAppSettings(context: Context) {
             val intent = Intent(Settings.ACTION_APPLICATION_DETAILS_SETTINGS)
             val uri: Uri = Uri.fromParts("package", context.packageName, null)
             intent.data = uri
+            context.startActivity(intent)
+        }
+
+        fun openWiFiSettings(context: Context) {
+            val intent = Intent(Settings.ACTION_WIFI_SETTINGS)
+            context.startActivity(intent)
+        }
+
+        fun openBluetoothSettings(context: Context) {
+            val intent = Intent(Settings.ACTION_BLUETOOTH_SETTINGS)
             context.startActivity(intent)
         }
     }

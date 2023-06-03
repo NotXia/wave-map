@@ -7,28 +7,26 @@ import androidx.fragment.app.DialogFragment
 import com.example.wavemap.R
 import com.example.wavemap.utilities.Permissions
 
-class OpenSettingsDialog(
+abstract class OpenSettingsDialog(
     private val title_id: Int,
-    private val message_id: Int
+    private val message_id: Int?
 ) : DialogFragment() {
 
-    companion object {
-        const val TAG = "Missing-Permissions-Dialog"
-    }
+    abstract fun openSettings()
 
     override fun onCreateDialog(savedInstanceState: Bundle?): Dialog {
         return activity?.let {
             val builder = AlertDialog.Builder(it)
 
             builder.setTitle(title_id)
-            builder.setMessage(message_id)
-                .setPositiveButton(R.string.settings) { _, _ ->
-                    Permissions.openSettings(requireContext())
-                    this.dismiss()
-                }
-                .setNegativeButton(R.string.cancel) { _, _ ->
-                    this.dismiss()
-                }
+            if (message_id != null) { builder.setMessage(message_id) }
+            builder.setPositiveButton(R.string.settings) { _, _ ->
+                openSettings()
+                this.dismiss()
+            }
+            .setNegativeButton(R.string.cancel) { _, _ ->
+                this.dismiss()
+            }
             builder.create()
         } ?: throw IllegalStateException("Activity cannot be null")
     }

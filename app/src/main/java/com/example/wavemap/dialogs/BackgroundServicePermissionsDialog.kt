@@ -24,7 +24,7 @@ class BackgroundServicePermissionsDialog(
             builder.setTitle(R.string.missing_background_gps_permission)
             builder.setMessage(R.string.missing_background_gps_permission_desc)
                 .setPositiveButton(R.string.settings) { _, _ ->
-                    Permissions.openSettings(requireContext())
+                    Permissions.openAppSettings(requireContext())
 
                     if (isBatteryOptimizationOn(requireContext())) {
                         val dialog = BatteryOptimizationDialog{ onGranted() }

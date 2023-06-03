@@ -21,7 +21,7 @@ class MissingMinimumPermissionsDialog : DialogFragment() {
             builder.setTitle(R.string.missing_minimum_permissions)
             builder.setMessage(R.string.missing_minimum_permissions_desc)
                 .setPositiveButton(R.string.settings) { _, _ ->
-                    Permissions.openSettings(requireContext())
+                    Permissions.openAppSettings(requireContext())
                     this.dismiss()
                 }
                 .setNegativeButton(R.string.exit) { _, _ ->

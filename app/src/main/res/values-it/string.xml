@@ -76,4 +76,7 @@
     <string name="battery_optimization_permission">Consenti attività in background</string>
     <string name="battery_optimization_permission_desc">Per un corretto funzionamento, è consigliabile consentire l\'esecuzione in background all\'applicazione</string>
 
+    <string name="wifi_not_enabled">Il Wi-Fi non è attivo</string>
+    <string name="bluetooth_not_enabled">Il Bluetooth non è attivo</string>
+
 </resources>

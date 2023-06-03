@@ -21,14 +21,10 @@ import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
 
-class LTESampler : WaveSampler {
-    private val context : Context
-    private val db : WaveDatabase
-
-    constructor(context: Context, db: WaveDatabase) {
-        this.context = context
-        this.db = db
-    }
+class LTESampler(
+    private val context: Context,
+    private val db: WaveDatabase
+) : WaveSampler() {
 
     override suspend fun sample() : List<WaveMeasure> = suspendCoroutine { cont ->
         if ( ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ) {

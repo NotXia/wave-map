@@ -23,16 +23,11 @@ import kotlin.coroutines.suspendCoroutine
 import kotlin.math.log10
 
 
-class NoiseSampler : WaveSampler {
-    private val context : Context
-    private val db : WaveDatabase
-    private var sample_time : Int
-
-    constructor(context: Context, db: WaveDatabase, sample_time: Int=5) {
-        this.context = context
-        this.db = db
-        this.sample_time = sample_time
-    }
+class NoiseSampler(
+    private val context: Context,
+    private val db: WaveDatabase,
+    private var sample_time: Int = 5
+) : WaveSampler() {
 
     private fun initMediaRecorder() : MediaRecorder {
         var media_recorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {

@@ -20,7 +20,7 @@ class BatteryOptimizationDialog(val onGranted: () -> Unit): DialogFragment() {
             builder.setTitle(R.string.battery_optimization_permission)
             builder.setMessage(R.string.battery_optimization_permission_desc)
                 .setPositiveButton(R.string.settings) { _, _ ->
-                    Permissions.openSettings(requireContext())
+                    Permissions.openAppSettings(requireContext())
                     onGranted()
                     this.dismiss()
                 }
