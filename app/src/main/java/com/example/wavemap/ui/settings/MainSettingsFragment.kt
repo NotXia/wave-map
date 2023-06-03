@@ -17,6 +17,8 @@ class MainSettingsFragment : PreferenceFragmentCompat() {
         if (!Permissions.notification.all{ permission -> ContextCompat.checkSelfPermission(requireContext(), permission) == PackageManager.PERMISSION_GRANTED }) {
             OpenSettingsDialog.Companion.App(R.string.missing_notification_permission, R.string.missing_notification_permission_desc)
                 .show(parentFragmentManager, OpenSettingsDialog.TAG)
+        } else {
+            BackgroundScanService.start(requireActivity())
         }
     }
 
@@ -29,42 +31,41 @@ class MainSettingsFragment : PreferenceFragmentCompat() {
 
 
         val background_scan = preferenceManager.findPreference<CheckBoxPreference>("background_scan")
-        background_scan?.onPreferenceChangeListener = Preference.OnPreferenceChangeListener { preference, enable ->
-            return@OnPreferenceChangeListener checkServicePermissions(enable as Boolean)
+        background_scan?.onPreferenceChangeListener = Preference.OnPreferenceChangeListener { _, enable ->
+            if (enable as Boolean) {
+                if (!checkAndPromptServicePermissions()) {
+                    return@OnPreferenceChangeListener false
+                } else {
+                    BackgroundScanService.start(requireActivity())
+                }
+            }
+            return@OnPreferenceChangeListener true
         }
 
         val notify_uncovered_area = preferenceManager.findPreference<CheckBoxPreference>("notify_uncovered_area")
-        notify_uncovered_area?.onPreferenceChangeListener = Preference.OnPreferenceChangeListener { preference, enable ->
+        notify_uncovered_area?.onPreferenceChangeListener = Preference.OnPreferenceChangeListener { _, enable ->
             if (enable as Boolean) {
-                if (checkServicePermissions(enable)) {
+                if (checkAndPromptServicePermissions()) {
                     check_notification_permission.launch(Permissions.notification)
                 }
                 return@OnPreferenceChangeListener Permissions.notification.all{ permission -> ContextCompat.checkSelfPermission(requireContext(), permission) == PackageManager.PERMISSION_GRANTED }
             }
-
             return@OnPreferenceChangeListener true
         }
     }
 
-    private fun checkServicePermissions(enable_service: Boolean) : Boolean {
-        if (enable_service) {
-            // Handle background location permission
-            if (!Permissions.background_gps.all{ perm -> ContextCompat.checkSelfPermission(requireContext(), perm) == PackageManager.PERMISSION_GRANTED }) {
-                OpenSettingsDialog.Companion.App(R.string.missing_background_gps_permission, R.string.missing_background_gps_permission_desc)
-                    .show(parentFragmentManager, OpenSettingsDialog.TAG)
-                return false
-            }
-
-            // Handle battery optimization
-            if (Misc.isBatteryOptimizationOn(requireContext())) {
-                OpenSettingsDialog.Companion.App(R.string.battery_optimization_permission, R.string.battery_optimization_permission_desc)
-                    .show(parentFragmentManager, OpenSettingsDialog.TAG)
-            }
-
-            BackgroundScanService.start(requireActivity())
+    private fun checkAndPromptServicePermissions() : Boolean {
+        // Handle background location permission
+        if (!Permissions.check(requireContext(), Permissions.background_gps)) {
+            OpenSettingsDialog.Companion.App(R.string.missing_background_gps_permission, R.string.missing_background_gps_permission_desc)
+                .show(parentFragmentManager, OpenSettingsDialog.TAG)
+            return false
         }
-        else {
-            if (!BackgroundScanService.needToStartService(requireActivity())) { BackgroundScanService.stop(requireActivity()) }
+
+        // Handle battery optimization (optional)
+        if (Misc.isBatteryOptimizationOn(requireContext())) {
+            OpenSettingsDialog.Companion.App(R.string.battery_optimization_permission, R.string.battery_optimization_permission_desc)
+                .show(parentFragmentManager, OpenSettingsDialog.TAG)
         }
 
         return true

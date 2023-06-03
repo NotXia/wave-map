@@ -8,7 +8,7 @@ import com.example.wavemap.measures.WaveSampler
 import com.example.wavemap.measures.samplers.BluetoothSampler
 import com.example.wavemap.utilities.Constants
 
-class BluetoothViewModel(application : Application) : QueryableMeasureViewModel(application) {
+class BluetoothViewModel(private val application : Application) : QueryableMeasureViewModel(application) {
     override lateinit var sampler : WaveSampler
     override val preferences_prefix: String = "bluetooth"
     override val default_scale: Pair<Double, Double> = Pair(
@@ -25,7 +25,7 @@ class BluetoothViewModel(application : Application) : QueryableMeasureViewModel(
     }
 
     override fun changeQuery(new_query: String?) {
-        sampler = BluetoothSampler(getApplication<Application>().applicationContext, new_query, db)
+        sampler = BluetoothSampler(application.applicationContext, new_query, db)
     }
 
     override fun listQueries() : List<Pair<String, String>> {

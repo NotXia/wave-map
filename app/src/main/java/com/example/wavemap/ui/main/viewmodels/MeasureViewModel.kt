@@ -14,7 +14,7 @@ abstract class MeasureViewModel(application : Application) : AndroidViewModel(ap
     abstract val measure_unit : String
 
     var values_scale : Pair<Double, Double>? = null
-    var range_size : Int = Constants.RANGE_SIZE_DEFAULT
+    var color_range_size : Int = Constants.RANGE_SIZE_DEFAULT
     var limit : Int? = null
 
     suspend fun measure() {
@@ -54,6 +54,6 @@ abstract class MeasureViewModel(application : Application) : AndroidViewModel(ap
             preferences.getString("${preferences_prefix}_range_good", "${default_scale.second}")!!.toDouble()
         )
         limit = preferences.getString("${preferences_prefix}_past_limit", "1")!!.toInt()
-        range_size = preferences.getString("${preferences_prefix}_range_size", "${Constants.RANGE_SIZE_DEFAULT}")!!.toInt()
+        color_range_size = preferences.getString("${preferences_prefix}_range_size", "${Constants.RANGE_SIZE_DEFAULT}")!!.toInt()
     }
 }

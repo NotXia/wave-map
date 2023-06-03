@@ -8,7 +8,7 @@ import com.example.wavemap.measures.WaveSampler
 import com.example.wavemap.measures.samplers.WiFiSampler
 import com.example.wavemap.utilities.Constants
 
-class WiFiViewModel(application : Application) : QueryableMeasureViewModel(application) {
+class WiFiViewModel(private val application : Application) : QueryableMeasureViewModel(application) {
     override lateinit var sampler : WaveSampler
     override val preferences_prefix: String = "wifi"
     override val default_scale: Pair<Double, Double> = Pair(
@@ -25,7 +25,7 @@ class WiFiViewModel(application : Application) : QueryableMeasureViewModel(appli
     }
 
     override fun changeQuery(new_query: String?) {
-        sampler = WiFiSampler(getApplication<Application>().applicationContext, new_query, db)
+        sampler = WiFiSampler(application.applicationContext, new_query, db)
     }
 
     override fun listQueries() : List<Pair<String, String>> {

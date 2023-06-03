@@ -126,7 +126,7 @@ class WiFiSampler(
         val wifi_receiver = object : BroadcastReceiver() {
             @SuppressLint("MissingPermission")
             override fun onReceive(context: Context, intent: Intent) {
-                context.unregisterReceiver(this)
+                try { context.unregisterReceiver(this) } catch (err : Exception) { /* Just in case*/ }
 
                 val success = intent.getBooleanExtra(WifiManager.EXTRA_RESULTS_UPDATED, false)
                 if (!success) { return cont.resumeWithException( RuntimeException("Wi-Fi scan failed") ) }

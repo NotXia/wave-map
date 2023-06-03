@@ -245,14 +245,12 @@ class MainActivity : AppCompatActivity() {
                 val queries = listOf(Pair(getString(R.string.remove_filter), null)) + queryable_model.listQueries()
                 val items : ArrayList<CharSequence> = queries.map{ it.first }.toCollection(ArrayList())
 
-                withContext(Dispatchers.Main) {
-                    MeasureFilterDialog(items){ index ->
-                        lifecycleScope.launch {
-                            queryable_model.changeQuery(queries[index].second)
-                            map_fragment.refreshMap()
-                        }
-                    }.show(supportFragmentManager, MeasureFilterDialog.TAG)
-                }
+                MeasureFilterDialog(items){ index ->
+                    lifecycleScope.launch {
+                        queryable_model.changeQuery(queries[index].second)
+                        map_fragment.refreshMap()
+                    }
+                }.show(supportFragmentManager, MeasureFilterDialog.TAG)
             }
         }
     }
@@ -287,10 +285,8 @@ class MainActivity : AppCompatActivity() {
 
         // Execute only if, at the end of the measure, the selected sampler is still this one (user may have changed the sampler in the meantime)
         if (curr_sampler.view_model == sampler.view_model) {
-            withContext(Dispatchers.Main) {
-                map_fragment.refreshMap()
-                enableMeasureFab()
-            }
+            map_fragment.refreshMap()
+            withContext(Dispatchers.Main) { enableMeasureFab() }
         }
 
         sampler.currently_measuring = false
@@ -300,9 +296,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun userTriggeredMeasure() {
         if (curr_sampler.checks_before_measure()) {
-            lifecycleScope.launch(Dispatchers.IO) {
-                permissions_check_and_measure_current.launch(curr_sampler.permissions)
-            }
+            permissions_check_and_measure_current.launch(curr_sampler.permissions)
         }
     }
 

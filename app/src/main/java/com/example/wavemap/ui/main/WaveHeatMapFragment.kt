@@ -138,11 +138,11 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
     }
 
     private suspend fun initLocationRetriever() : Unit = suspendCoroutine { cont ->
-        lifecycleScope.launch {
-            if ( ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ) {
-                return@launch cont.resumeWithException( SecurityException("Missing ACCESS_FINE_LOCATION permission") )
-            }
+        if ( ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ) {
+            return@suspendCoroutine cont.resumeWithException( SecurityException("Missing ACCESS_FINE_LOCATION permission") )
+        }
 
+        lifecycleScope.launch {
             val location_options = LocationRequest.Builder(Priority.PRIORITY_HIGH_ACCURACY, 200).apply {
                 setGranularity(Granularity.GRANULARITY_PERMISSION_LEVEL)
                 setWaitForAccurateLocation(true)
@@ -192,18 +192,19 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
      * */
 
     private fun drawTile(top_left_corner: LatLng) {
+        if (view_model.values_scale == null) { return }
+
         val top_right_corner = LatLng(top_left_corner.latitude, top_left_corner.longitude+metersToLongitudeOffset(tile_length_meters, top_left_corner.latitude))
         val bottom_right_corner = LatLng(top_left_corner.latitude-metersToLatitudeOffset(tile_length_meters), top_left_corner.longitude+metersToLongitudeOffset(tile_length_meters, top_left_corner.latitude))
         val bottom_left_corner = LatLng(top_left_corner.latitude-metersToLatitudeOffset(tile_length_meters), top_left_corner.longitude)
 
         lifecycleScope.launch(Dispatchers.IO) {
             val tile_average : Double? = view_model.averageOf(top_left_corner, bottom_right_corner)
-            if (view_model.values_scale == null) { return@launch }
-
             var color = ColorUtils.setAlphaComponent(0, 0)
+
             if (tile_average != null) {
                 var hue = scaleToInterval(tile_average, view_model.values_scale!!, Constants.HUE_MEASURE_RANGE)
-                hue = scaleToRange(hue, Constants.HUE_MEASURE_RANGE, view_model.range_size)
+                hue = scaleToRange(hue, Constants.HUE_MEASURE_RANGE, view_model.color_range_size)
                 color = ColorUtils.setAlphaComponent(ColorUtils.HSLToColor(floatArrayOf(hue.toFloat(), 1f, 0.6f)), 100)
             }
 
@@ -226,24 +227,23 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
     }
 
     private fun drawTileLabel(top_left_corner: LatLng, text: String) {
-        val textPaint = Paint()
-        textPaint.textSize = 35f
-        var width = textPaint.measureText(text)
-        var height = textPaint.textSize
+        val text_paint = Paint()
+        text_paint.textSize = 35f
+        var width = text_paint.measureText(text)
+        var height = text_paint.textSize
         val top_right_corner = LatLng(top_left_corner.latitude, top_left_corner.longitude+metersToLongitudeOffset(tile_length_meters, top_left_corner.latitude))
-        val tile_size = google_map.projection.toScreenLocation(top_right_corner).x - google_map.projection.toScreenLocation(top_left_corner).x
+        val tile_size_px = google_map.projection.toScreenLocation(top_right_corner).x - google_map.projection.toScreenLocation(top_left_corner).x
 
         // Reduces font size if there is not enough space
-        while (tile_size < width &&
-                textPaint.textSize > 5f) {
-            textPaint.textSize -= 2f
-            width = textPaint.measureText(text)
-            height = textPaint.textSize
+        while (tile_size_px < width && text_paint.textSize > 5f) {
+            text_paint.textSize -= 2f
+            width = text_paint.measureText(text)
+            height = text_paint.textSize
         }
 
         val image = Bitmap.createBitmap(width.toInt(), height.toInt(), Bitmap.Config.ARGB_8888)
         val canvas = Canvas(image)
-        canvas.drawText(text, 0f, canvas.height.toFloat(), textPaint)
+        canvas.drawText(text, 0f, canvas.height.toFloat(), text_paint)
 
         val marker = google_map.addMarker(
             MarkerOptions()

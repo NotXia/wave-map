@@ -3,10 +3,10 @@ package com.example.wavemap.services
 
 import android.Manifest
 import android.app.*
+import android.content.Context
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
-import android.os.Build
 import android.os.IBinder
 import android.os.Looper
 import android.util.Log
@@ -27,6 +27,7 @@ import kotlinx.coroutines.launch
 import com.example.wavemap.R
 import com.example.wavemap.utilities.LocationUtils.Companion.metersToLatitudeOffset
 import com.example.wavemap.utilities.LocationUtils.Companion.metersToLongitudeOffset
+import com.example.wavemap.utilities.Permissions
 import com.google.android.gms.maps.model.LatLng
 
 
@@ -34,12 +35,9 @@ class BackgroundScanService : Service() {
 
     companion object {
         fun start(activity: Activity) {
-            if (ContextCompat.checkSelfPermission(activity.applicationContext, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ||
-                ContextCompat.checkSelfPermission(activity.applicationContext, Manifest.permission.ACCESS_BACKGROUND_LOCATION) != PackageManager.PERMISSION_GRANTED ||
-                !needToStartService(activity)) {
+            if (!Permissions.check(activity.applicationContext, Permissions.background_gps) || !needToStartService(activity.applicationContext)) {
                 return
             }
-
             activity.startService(Intent(activity.applicationContext, BackgroundScanService::class.java))
         }
 
@@ -47,11 +45,12 @@ class BackgroundScanService : Service() {
             activity.stopService(Intent(activity.applicationContext, BackgroundScanService::class.java))
         }
 
-        fun needToStartService(activity: Activity) : Boolean {
-            val pref_manager = PreferenceManager.getDefaultSharedPreferences(activity.applicationContext)
+        fun needToStartService(context: Context) : Boolean {
+            val pref_manager = PreferenceManager.getDefaultSharedPreferences(context)
             return pref_manager.getBoolean("background_scan", false) || pref_manager.getBoolean("notify_uncovered_area", false)
         }
     }
+
 
     private lateinit var location_callback : LocationCallback
     private lateinit var fused_location_provider : FusedLocationProviderClient
@@ -84,6 +83,7 @@ class BackgroundScanService : Service() {
 
         location_callback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
+                if (!needToStartService(applicationContext)) { stopSelf() }
                 if (locationResult.lastLocation == null) { return }
                 if (first_location) { first_location = false; return } // Ignore the first location since it will be very close to when the app was still in foreground
 
@@ -134,7 +134,12 @@ class BackgroundScanService : Service() {
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
-        startLocationUpdates()
+        try {
+            startLocationUpdates()
+        }
+        catch (err : Exception) {
+            Log.e("service", "Cannot start location retriever")
+        }
         return START_STICKY
     }
 
@@ -174,21 +179,14 @@ class BackgroundScanService : Service() {
         }
 
         lateinit var notification_builder : NotificationCompat.Builder
-
-        if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.O) {
-            val channel_id = "ch_uncovered_area"
-            val channel_name: CharSequence = getString(R.string.notification_uncovered_area)
-            val channel_desc = getString(R.string.notification_uncovered_area_desc)
-            val channel = NotificationChannel(channel_id, channel_name, NotificationManager.IMPORTANCE_DEFAULT)
-            channel.description = channel_desc
-            val notificationManager = getSystemService(NotificationManager::class.java)
-            notificationManager.createNotificationChannel(channel)
-
-            notification_builder = NotificationCompat.Builder(applicationContext, channel_id)
-
-        } else {
-            notification_builder = NotificationCompat.Builder(applicationContext)
-        }
+        val channel_id = "ch_uncovered_area"
+        val channel_name: CharSequence = getString(R.string.notification_uncovered_area)
+        val channel_desc = getString(R.string.notification_uncovered_area_desc)
+        val channel = NotificationChannel(channel_id, channel_name, NotificationManager.IMPORTANCE_DEFAULT)
+        channel.description = channel_desc
+        val notificationManager = getSystemService(NotificationManager::class.java)
+        notificationManager.createNotificationChannel(channel)
+        notification_builder = NotificationCompat.Builder(applicationContext, channel_id)
 
         notification_builder.setContentTitle(getString(R.string.notification_uncovered_area)).setContentText(getString(R.string.notification_uncovered_area_text))
             .setSmallIcon(R.mipmap.ic_launcher_round)
