@@ -1,3 +1,7 @@
+/**
+ * Dialog for measurements filtering
+ * */
+
 package com.example.wavemap.dialogs
 
 import android.app.AlertDialog

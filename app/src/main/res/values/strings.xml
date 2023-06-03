@@ -71,6 +71,9 @@
     <string name="missing_background_gps_permission">Missing background location permission</string>
     <string name="missing_background_gps_permission_desc">Background location is required to retrieve the position of the device while the app is inactive</string>
 
+    <string name="missing_notification_permission">Missing notification permission</string>
+    <string name="missing_notification_permission_desc">The app in unable to send notifications</string>
+
     <string name="battery_optimization_permission">Allow background activity</string>
     <string name="battery_optimization_permission_desc">It is advisable to allow the application to maintain background activities</string>
 

@@ -49,7 +49,7 @@ class MainActivity : AppCompatActivity() {
         val view_model : MeasureViewModel,
         val label : String,
         val permissions : Array<String>,
-        val permissions_dialog : OpenAppSettingsDialog,
+        val permissions_dialog : OpenSettingsDialog,
         val checks_before_measure : () -> Boolean
     ) {
         var currently_measuring : Boolean = false // To prevent multiple measure requests
@@ -85,23 +85,23 @@ class MainActivity : AppCompatActivity() {
         setContentView(R.layout.activity_main)
 
         available_samplers = arrayOf(
-            SamplerHandler(wifi_model, resources.getString(R.string.wifi), Permissions.wifi, OpenAppSettingsDialog(R.string.missing_wifi_permission, R.string.missing_wifi_permission_desc)) {
+            SamplerHandler(wifi_model, resources.getString(R.string.wifi), Permissions.wifi, OpenSettingsDialog.Companion.App(R.string.missing_wifi_permission, R.string.missing_wifi_permission_desc)) {
                 if (WiFiSampler.isWiFiEnabled(baseContext)) { true }
                 else {
-                    OpenWiFiSettingsDialog(R.string.wifi_not_enabled, null).show(supportFragmentManager, OpenWiFiSettingsDialog.TAG)
+                    OpenSettingsDialog.Companion.WiFi(R.string.wifi_not_enabled, null).show(supportFragmentManager, OpenSettingsDialog.TAG)
                     false
                 }
             },
-            SamplerHandler(lte_model, resources.getString(R.string.lte), Permissions.lte, OpenAppSettingsDialog(R.string.missing_lte_permission, R.string.missing_lte_permission_desc)) {
+            SamplerHandler(lte_model, resources.getString(R.string.lte), Permissions.lte, OpenSettingsDialog.Companion.App(R.string.missing_lte_permission, R.string.missing_lte_permission_desc)) {
                 true
             },
-            SamplerHandler(noise_model, resources.getString(R.string.noise), Permissions.noise, OpenAppSettingsDialog(R.string.missing_noise_permission, R.string.missing_noise_permission_desc)) {
+            SamplerHandler(noise_model, resources.getString(R.string.noise), Permissions.noise, OpenSettingsDialog.Companion.App(R.string.missing_noise_permission, R.string.missing_noise_permission_desc)) {
                 true
             },
-            SamplerHandler(bluetooth_model, resources.getString(R.string.bluetooth), Permissions.bluetooth, OpenAppSettingsDialog(R.string.missing_bluetooth_permission, R.string.missing_bluetooth_permission_desc)) {
+            SamplerHandler(bluetooth_model, resources.getString(R.string.bluetooth), Permissions.bluetooth, OpenSettingsDialog.Companion.App(R.string.missing_bluetooth_permission, R.string.missing_bluetooth_permission_desc)) {
                 if (BluetoothSampler.isBluetoothEnabled(baseContext)) { true }
                 else {
-                    OpenBluetoothSettingsDialog(R.string.bluetooth_not_enabled, null).show(supportFragmentManager, OpenBluetoothSettingsDialog.TAG)
+                    OpenSettingsDialog.Companion.Bluetooth(R.string.bluetooth_not_enabled, null).show(supportFragmentManager, OpenSettingsDialog.TAG)
                     false
                 }
             }
@@ -131,7 +131,7 @@ class MainActivity : AppCompatActivity() {
         permissions_check_and_measure_current = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { is_granted: Map<String, Boolean> ->
             if (!is_granted.values.all{ granted -> granted }) {
                 val dialog = curr_sampler.permissions_dialog
-                dialog.show(supportFragmentManager, OpenAppSettingsDialog.TAG)
+                dialog.show(supportFragmentManager, OpenSettingsDialog.TAG)
             }
             else {
                 lifecycleScope.launch(Dispatchers.IO) {

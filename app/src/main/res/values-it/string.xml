@@ -73,6 +73,9 @@
     <string name="missing_background_gps_permission">Permessi per posizione in background mancanti</string>
     <string name="missing_background_gps_permission_desc">La posizione in background è necessaria per rilevare la posizione del dispositivo quando l\'app è inattiva</string>
 
+    <string name="missing_notification_permission">Permessi per notifiche mancanti</string>
+    <string name="missing_notification_permission_desc">L\'app non può inviare notifiche</string>
+
     <string name="battery_optimization_permission">Consenti attività in background</string>
     <string name="battery_optimization_permission_desc">Per un corretto funzionamento, è consigliabile consentire l\'esecuzione in background all\'applicazione</string>
 
