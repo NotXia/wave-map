@@ -192,6 +192,7 @@ class BackgroundScanService : Service() {
         notification_builder.setContentTitle(getString(R.string.notification_uncovered_area)).setContentText(getString(R.string.notification_uncovered_area_text))
             .setSmallIcon(R.mipmap.ic_launcher_round)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setAutoCancel(true)
             .setContentIntent(TaskStackBuilder.create(this).run {
                 addNextIntentWithParentStack(Intent(applicationContext, MainActivity::class.java))
                 getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
