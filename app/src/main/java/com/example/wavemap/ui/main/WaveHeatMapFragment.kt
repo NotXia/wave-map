@@ -121,8 +121,11 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
             center = current_location
 
             google_map.setOnCameraMoveListener {
-                markers.forEach { it.remove() }
-                markers = mutableListOf()
+                // Remove labels when the tile size changes (to prevent the text to overflow from the tile)
+                if (zoomToTileLength(google_map.cameraPosition.zoom) != tile_length_meters) {
+                    markers.forEach { it.remove() }
+                    markers = mutableListOf()
+                }
             }
 
             google_map.setOnCameraIdleListener {
@@ -291,15 +294,17 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
         }
     }
 
-    private fun updateTilesLength() {
-        val zoom_level = google_map.cameraPosition.zoom
-
-        // Selects new tile length
-        tile_length_meters = when {
-            zoom_level < 5 -> 1000000.0
-            zoom_level < 21 -> 5.0 * (2.0).pow(20.0 - round(zoom_level) + 1.0)
+    private fun zoomToTileLength(zoom : Float) : Double {
+        return when {
+            zoom < 5 -> 1000000.0
+            zoom < 21 -> 5.0 * (2.0).pow(20.0 - round(zoom) + 1.0)
             else -> 2.0
         }
+    }
+
+    private fun updateTilesLength() {
+        // Selects new tile length
+        tile_length_meters = zoomToTileLength(google_map.cameraPosition.zoom)
 
         // Realigns top-left corner of the center tile
         top_left_center = LatLng(
