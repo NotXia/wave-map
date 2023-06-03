@@ -255,9 +255,7 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
         val top_left_visible = getReferenceTileContaining(
             LatLng(google_map.projection.visibleRegion.latLngBounds.northeast.latitude, google_map.projection.visibleRegion.latLngBounds.southwest.longitude)
         )
-        val bottom_right_visible = getReferenceTileContaining(
-            LatLng(google_map.projection.visibleRegion.latLngBounds.southwest.latitude, google_map.projection.visibleRegion.latLngBounds.northeast.longitude)
-        )
+        val bottom_right_visible = LatLng(google_map.projection.visibleRegion.latLngBounds.southwest.latitude, google_map.projection.visibleRegion.latLngBounds.northeast.longitude)
 
         if (top_left_visible.longitude > bottom_right_visible.longitude) { // Wrap-up area (Pacific Ocean)
             val left_side_bottom = LatLng(bottom_right_visible.latitude, 179.9)
@@ -274,23 +272,18 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
     }
 
     private fun fillAreaWithTiles(top_left: LatLng, bottom_right: LatLng) {
-        // For more tolerance
-        val real_bottom_right = LatLng(
-            bottom_right.latitude - metersToLatitudeOffset(tile_length_meters),
-            bottom_right.longitude + metersToLongitudeOffset(tile_length_meters, bottom_right.latitude)
-        )
         var current_tile = top_left
 
         // Fill the screen with tiles
-        while (current_tile.latitude >= real_bottom_right.latitude) {
-            while (current_tile.longitude <= real_bottom_right.longitude) {
+        while (current_tile.latitude >= bottom_right.latitude) {
+            while (current_tile.longitude <= bottom_right.longitude) {
                 drawTile(current_tile)
 
                 val new_longitude = current_tile.longitude + metersToLongitudeOffset(tile_length_meters, current_tile.latitude)
                 current_tile = LatLng(current_tile.latitude, new_longitude)
 
-                // Wrap up handling
-                if (abs(new_longitude - current_tile.longitude) > metersToLongitudeOffset(tile_length_meters, current_tile.latitude)) {
+                // Wrap up handling (checks if the longitude distance is greater than a normal tile size with a 20% tolerance)
+                if (abs(new_longitude - current_tile.longitude) > metersToLongitudeOffset(tile_length_meters, current_tile.latitude)*1.2) {
                     break
                 }
             }
