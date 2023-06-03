@@ -22,7 +22,28 @@ abstract class MeasureViewModel(application : Application) : AndroidViewModel(ap
     }
 
     suspend fun averageOf(top_left_corner: LatLng, bottom_right_corner: LatLng) : Double? {
-        return sampler.average(top_left_corner, bottom_right_corner, limit)
+        // The average of a tile is obtained as the average of its sub-tiles
+        val latitude_step = (top_left_corner.latitude - bottom_right_corner.latitude) / Constants.TILE_AVERAGE_STEPS
+        val longitude_step = (bottom_right_corner.longitude - top_left_corner.longitude) / Constants.TILE_AVERAGE_STEPS
+        val measures = mutableListOf<Double>()
+        var curr_top_left = top_left_corner
+
+        for (i in 0 until Constants.TILE_AVERAGE_STEPS) {
+            for (j in 0 until Constants.TILE_AVERAGE_STEPS) {
+                val tile_average = sampler.average(
+                    curr_top_left,
+                    LatLng(curr_top_left.latitude-latitude_step, curr_top_left.longitude+longitude_step),
+                    limit
+                )
+                if (tile_average != null) { measures.add(tile_average) }
+
+                curr_top_left = LatLng(curr_top_left.latitude, curr_top_left.longitude+longitude_step)
+            }
+
+            curr_top_left = LatLng(curr_top_left.latitude-latitude_step, top_left_corner.longitude)
+        }
+
+        return if (measures.isEmpty()) null else measures.average()
     }
 
     fun loadSettingsPreferences() {

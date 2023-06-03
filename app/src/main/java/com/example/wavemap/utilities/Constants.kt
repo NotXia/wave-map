@@ -19,5 +19,7 @@ class Constants {
         const val RANGE_SIZE_DEFAULT : Int = 3
 
         const val DATABASE_NAME = "wave"
+
+        const val TILE_AVERAGE_STEPS = 3
     }
 }
