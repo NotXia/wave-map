@@ -2,7 +2,6 @@ package com.example.wavemap.ui.main
 
 import android.Manifest
 import android.annotation.SuppressLint
-import android.app.Activity
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.graphics.Bitmap
@@ -43,10 +42,13 @@ import kotlin.coroutines.suspendCoroutine
 import kotlin.math.*
 
 
-class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment() {
+class WaveHeatMapFragment : Fragment() {
 
     private lateinit var google_map : GoogleMap
     private lateinit var pref_manager : SharedPreferences
+    lateinit var view_model : MeasureViewModel
+    private val is_initialized : Boolean
+        get() = this::google_map.isInitialized && this::center.isInitialized && this::top_left_center.isInitialized && this::view_model.isInitialized
 
     private var tile_length_meters = 500.0
     private lateinit var center : LatLng
@@ -60,6 +62,10 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
         MutableLiveData<LatLng>()
     }
 
+    private val BUNDLE_CAMERA_LAT = "camera-lat"
+    private val BUNDLE_CAMERA_LON = "camera-lon"
+    private val BUNDLE_CAMERA_ZOOM = "camera-zoom"
+
 
 
     suspend fun changeViewModel(view_model : MeasureViewModel) {
@@ -68,7 +74,7 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
     }
 
     suspend fun refreshMap() {
-        if (!this::google_map.isInitialized || !this::center.isInitialized || !this::top_left_center.isInitialized) { return }
+        if (!is_initialized) { return }
 
         map_mutex.withLock {
             withContext(Dispatchers.Main) {
@@ -95,10 +101,24 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
 
             if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
                 lifecycleScope.launch {
-                    initMap()
+                    if (savedInstanceState != null) {
+                        val restored_center = LatLng(savedInstanceState.getDouble(BUNDLE_CAMERA_LAT), savedInstanceState.getDouble(BUNDLE_CAMERA_LON))
+                        val restored_zoom = savedInstanceState.getFloat(BUNDLE_CAMERA_ZOOM)
+                        initMap(restored_center, restored_zoom)
+                    }
+                    else {
+                        initMap()
+                    }
                 }
             }
         }
+    }
+
+    override fun onSaveInstanceState(outState: Bundle) {
+        super.onSaveInstanceState(outState)
+        outState.putDouble(BUNDLE_CAMERA_LAT, google_map.cameraPosition.target.latitude)
+        outState.putDouble(BUNDLE_CAMERA_LON, google_map.cameraPosition.target.longitude)
+        outState.putFloat(BUNDLE_CAMERA_ZOOM, google_map.cameraPosition.zoom)
     }
 
 
@@ -107,18 +127,23 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
      * Init
      * */
 
-    private suspend fun initMap() {
+    private suspend fun initMap(to_center_coord: LatLng?=null, zoom_level: Float=18f) {
         if ( ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ) {
             throw SecurityException("Missing ACCESS_FINE_LOCATION permission")
         }
 
         initLocationRetriever()
-        val current_location : LatLng = LocationUtils.getCurrent(activity as Activity)
+        val current_location : LatLng = try {
+             LocationUtils.getCurrent(requireActivity())
+        } catch (err: Exception) {
+            LatLng(0.0, 0.0)
+        }
 
         withContext(Dispatchers.Main) {
             google_map.isMyLocationEnabled = true
-            google_map.moveCamera(CameraUpdateFactory.newLatLngZoom(current_location, 18f))
+            google_map.moveCamera( CameraUpdateFactory.newLatLngZoom(to_center_coord ?: current_location, zoom_level) )
             center = current_location
+            updateTilesLength()
 
             google_map.setOnCameraMoveListener {
                 // Remove labels when the tile size changes (to prevent the text to overflow from the tile)
@@ -149,6 +174,7 @@ class WaveHeatMapFragment(private var view_model : MeasureViewModel) : Fragment(
             }.build()
             val location_callback = object : LocationCallback() {
                 override fun onLocationResult(locationResult: LocationResult) {
+                    if (!is_initialized) { return } // In case a new location is available before initialization end
                     if (locationResult.lastLocation == null) { return }
 
                     val location = locationResult.lastLocation as Location
