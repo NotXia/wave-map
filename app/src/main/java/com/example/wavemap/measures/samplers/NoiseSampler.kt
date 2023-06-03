@@ -1,17 +1,15 @@
 package com.example.wavemap.measures.samplers
 
-import android.Manifest
 import android.content.Context
-import android.content.pm.PackageManager
 import android.media.MediaRecorder
 import android.os.Build
-import androidx.core.content.ContextCompat
 import com.example.wavemap.db.MeasureTable
 import com.example.wavemap.db.MeasureType
 import com.example.wavemap.db.WaveDatabase
 import com.example.wavemap.measures.WaveMeasure
 import com.example.wavemap.measures.WaveSampler
 import com.example.wavemap.utilities.LocationUtils
+import com.example.wavemap.utilities.Permissions
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.delay
@@ -30,11 +28,7 @@ class NoiseSampler(
 ) : WaveSampler() {
 
     private fun initMediaRecorder() : MediaRecorder {
-        var media_recorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
-            MediaRecorder(context)
-        } else{
-            MediaRecorder()
-        }
+        val media_recorder = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) MediaRecorder(context) else MediaRecorder()
 
         media_recorder.setAudioSource(MediaRecorder.AudioSource.MIC)
         media_recorder.setOutputFormat(MediaRecorder.OutputFormat.THREE_GPP)
@@ -49,17 +43,16 @@ class NoiseSampler(
         return media_recorder
     }
 
+    // Measures by averaging a couple of sound samples
     override suspend fun sample() : List<WaveMeasure> = suspendCoroutine { cont ->
-        if ( ContextCompat.checkSelfPermission(context, Manifest.permission.RECORD_AUDIO) != PackageManager.PERMISSION_GRANTED ) {
-            return@suspendCoroutine cont.resumeWithException( SecurityException("Missing RECORD_AUDIO permissions") )
-        }
+        if ( !Permissions.check(context, Permissions.noise) ) { return@suspendCoroutine cont.resumeWithException( SecurityException("Missing noise permissions") ) }
 
-        GlobalScope.launch() {
+        GlobalScope.launch {
             val media_recorder = initMediaRecorder()
-            var sum_db : Double = 0.0
+            var sum_db = 0.0
 
             media_recorder.start()
-            media_recorder.maxAmplitude  // the first call to maxAmplitude always return 0
+            media_recorder.maxAmplitude  // The first call to maxAmplitude always returns 0
             for (i in 1..sample_time) {
                 delay(500)
 
@@ -81,7 +74,7 @@ class NoiseSampler(
         }
     }
 
-    override suspend fun store(measures: List<WaveMeasure>) : Unit {
+    override suspend fun store(measures: List<WaveMeasure>) {
         for (measure in measures) {
             db.measureDAO().insert( MeasureTable(0, MeasureType.NOISE, measure.value, measure.timestamp, measure.latitude, measure.longitude, measure.info) )
         }

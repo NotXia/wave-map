@@ -1,11 +1,10 @@
 package com.example.wavemap.measures.samplers
 
-import android.Manifest
+import android.annotation.SuppressLint
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.pm.PackageManager
 import android.net.ConnectivityManager
 import android.net.Network
 import android.net.NetworkCapabilities
@@ -15,12 +14,11 @@ import android.net.wifi.WifiManager
 import android.os.Build
 import android.os.Handler
 import android.os.Looper
-import androidx.core.content.ContextCompat
 import com.example.wavemap.db.*
-import com.example.wavemap.exceptions.MeasureException
 import com.example.wavemap.measures.WaveMeasure
 import com.example.wavemap.measures.WaveSampler
 import com.example.wavemap.utilities.LocationUtils
+import com.example.wavemap.utilities.Permissions
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.Runnable
@@ -39,26 +37,30 @@ class WiFiSampler(
 
     companion object {
         fun isWiFiEnabled(context: Context) : Boolean {
+            if ( !Permissions.check(context, Permissions.wifi) ) { return false }
             val manager = context.getSystemService(Context.WIFI_SERVICE) as WifiManager? ?: return false
             return manager.isWifiEnabled
         }
     }
 
+    // Measures the current connected Wi-Fi and tries to start a complete scan
     override suspend fun sample() : List<WaveMeasure> = suspendCoroutine { cont ->
+        if ( !Permissions.check(context, Permissions.wifi) ) { return@suspendCoroutine cont.resumeWithException( SecurityException("Missing Wi-Fi permissions") ) }
+
         GlobalScope.launch {
             var measures = listOf<WaveMeasure>()
             val timestamp = System.currentTimeMillis()
 
             val connected_wifi = sampleCurrentlyConnectedWiFi(timestamp)
-            if (connected_wifi != null) { measures = measures + listOf(connected_wifi) }
+            if (connected_wifi != null) { measures = listOf(connected_wifi) }
 
             try {
                 measures = measures + sampleWithWiFiScanner(timestamp)
             }
-            catch (err : MeasureException) { /* Cannot start wifi scan */ }
+            catch (err : RuntimeException) { /* Cannot start Wi-Fi scan */ }
 
             if (measures.isEmpty() && connected_wifi == null) {
-                cont.resumeWithException( MeasureException("Cannot scan Wi-Fi") )
+                cont.resumeWithException( RuntimeException("Cannot scan Wi-Fi") )
             }
             else {
                 cont.resume( measures )
@@ -68,9 +70,9 @@ class WiFiSampler(
 
     private fun createWiFiName(ssid: String, bssid: String, frequency: Int) : String {
         val frequency_str = if (frequency >= 4900) "5 GHz" else "2.4 GHz"
-        val ssid_normalized = ssid.replace("^\"|\"$".toRegex(), "")
+        val ssid_normalized = ssid.replace("^\"|\"$".toRegex(), "").trim()
 
-        return if (ssid_normalized.isNotEmpty()) "${ssid_normalized} (${frequency_str})" else "${bssid}"
+        return if (ssid_normalized.isNotEmpty()) "$ssid_normalized ($frequency_str)" else bssid
     }
 
     private suspend fun sampleCurrentlyConnectedWiFi(timestamp: Long) : WaveMeasure? = suspendCoroutine { cont ->
@@ -78,8 +80,7 @@ class WiFiSampler(
             val request = NetworkRequest.Builder().addTransportType(NetworkCapabilities.TRANSPORT_WIFI).build()
             val connectivity_manager : ConnectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
             val timeout_handler = Handler(Looper.getMainLooper())
-
-            val callback = object : ConnectivityManager.NetworkCallback(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.Q) FLAG_INCLUDE_LOCATION_INFO else 0) {
+            val callback = object : ConnectivityManager.NetworkCallback(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) FLAG_INCLUDE_LOCATION_INFO else 0) {
                 override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
                     timeout_handler.removeCallbacksAndMessages(null)
                     connectivity_manager.unregisterNetworkCallback(this)
@@ -99,11 +100,12 @@ class WiFiSampler(
                 }
             }
 
-            connectivity_manager.requestNetwork(request, callback)
             connectivity_manager.registerNetworkCallback(request, callback)
             timeout_handler.postDelayed(Runnable {
-                try { connectivity_manager.unregisterNetworkCallback(callback) } catch (err : Exception) { /* Just in case */ }
-                try { cont.resume(null) } catch (err : Exception) { /* Just in case */ }
+                try {
+                    connectivity_manager.unregisterNetworkCallback(callback)
+                    cont.resume(null)
+                } catch (err : Exception) { /* Just in case */ }
             }, 3000)
         } else {
             GlobalScope.launch {
@@ -120,30 +122,25 @@ class WiFiSampler(
     }
 
     private suspend fun sampleWithWiFiScanner(timestamp: Long) : List<WaveMeasure> = suspendCoroutine { cont ->
-        val wifiManager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
-
-        val wifiScanReceiver = object : BroadcastReceiver() {
+        val wifi_manager = context.applicationContext.getSystemService(Context.WIFI_SERVICE) as WifiManager
+        val wifi_receiver = object : BroadcastReceiver() {
+            @SuppressLint("MissingPermission")
             override fun onReceive(context: Context, intent: Intent) {
-                val success = intent.getBooleanExtra(WifiManager.EXTRA_RESULTS_UPDATED, false)
-                if (!success) { return }
                 context.unregisterReceiver(this)
 
-                GlobalScope.launch {
-                    if ( ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ) {
-                        return@launch cont.resumeWithException( SecurityException("Missing ACCESS_FINE_LOCATION permissions") )
-                    }
+                val success = intent.getBooleanExtra(WifiManager.EXTRA_RESULTS_UPDATED, false)
+                if (!success) { return cont.resumeWithException( RuntimeException("Wi-Fi scan failed") ) }
 
+                GlobalScope.launch {
                     val current_location: LatLng = LocationUtils.getCurrent(context)
-                    val results = wifiManager.scanResults
-                    var wifi_list = mutableListOf<MeasureTable>()
+                    val results = wifi_manager.scanResults
+                    val wifi_list = mutableListOf<MeasureTable>()
 
                     for (wifi in results) {
                         val ssid = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) wifi.wifiSsid.toString().drop(1).dropLast(1).trim() else wifi.SSID
 
                         wifi_list.add( MeasureTable(0, MeasureType.WIFI, wifi.level.toDouble(), timestamp, current_location.latitude, current_location.longitude, wifi.BSSID) )
-                        db.bssidDAO().insert(
-                            BSSIDTable(wifi.BSSID, createWiFiName(ssid, wifi.BSSID, wifi.frequency), BSSIDType.WIFI)
-                        )
+                        db.bssidDAO().insert( BSSIDTable(wifi.BSSID, createWiFiName(ssid, wifi.BSSID, wifi.frequency), BSSIDType.WIFI) )
                     }
 
                     cont.resume( wifi_list )
@@ -151,9 +148,9 @@ class WiFiSampler(
             }
         }
 
-        val intentFilter = IntentFilter()
-        intentFilter.addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)
-        context.registerReceiver(wifiScanReceiver, intentFilter)
+        val intent_filter = IntentFilter()
+        intent_filter.addAction(WifiManager.SCAN_RESULTS_AVAILABLE_ACTION)
+        context.registerReceiver(wifi_receiver, intent_filter)
 
         /*
         * https://developer.android.com/guide/topics/connectivity/wifi-scan
@@ -161,14 +158,14 @@ class WiFiSampler(
         * Each foreground app can scan four times in a 2-minute period.
         * All background apps combined can scan one time in a 30-minute period.
         * */
-        val success = wifiManager.startScan()
+        val success = wifi_manager.startScan()
         if (!success) {
-            context.unregisterReceiver(wifiScanReceiver)
-            cont.resumeWithException(MeasureException())
+            context.unregisterReceiver(wifi_receiver)
+            cont.resumeWithException(RuntimeException("Cannot scan Wi-Fi"))
         }
     }
 
-    override suspend fun store(measures: List<WaveMeasure>) : Unit {
+    override suspend fun store(measures: List<WaveMeasure>) {
         for (measure in measures) {
             db.measureDAO().insert( MeasureTable(0, MeasureType.WIFI, measure.value, measure.timestamp, measure.latitude, measure.longitude, measure.info) )
         }

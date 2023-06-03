@@ -1,7 +1,5 @@
 package com.example.wavemap.measures
 
-import androidx.room.ColumnInfo
-
 interface WaveMeasure {
     val value: Double
     val timestamp: Long

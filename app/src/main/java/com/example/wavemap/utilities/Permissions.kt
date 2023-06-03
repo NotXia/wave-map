@@ -3,12 +3,18 @@ package com.example.wavemap.utilities
 import android.Manifest
 import android.content.Context
 import android.content.Intent
+import android.content.pm.PackageManager
 import android.net.Uri
 import android.os.Build
 import android.provider.Settings
+import androidx.core.content.ContextCompat
 
 class Permissions {
     companion object {
+
+        fun check(context: Context, permissions: Array<String>) : Boolean {
+            return permissions.all{ permission -> ContextCompat.checkSelfPermission(context, permission) == PackageManager.PERMISSION_GRANTED }
+        }
 
         val gps : Array<String>
             get() = arrayOf(

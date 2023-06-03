@@ -4,14 +4,14 @@ import com.google.android.gms.maps.model.LatLng
 
 abstract class WaveSampler {
     /**
-     * Measures the current value
+     * Measures the current value(s)
      * */
     abstract suspend fun sample() : List<WaveMeasure>
 
     /**
-     * Saves a measure
+     * Saves some measures
      * */
-    abstract suspend fun store(measures: List<WaveMeasure>) : Unit
+    abstract suspend fun store(measures: List<WaveMeasure>)
 
     /**
      * Retrieves the measurements in a square area defined by the coordinates of its top-left and bottom-right corner
@@ -30,12 +30,7 @@ abstract class WaveSampler {
     suspend fun average(top_left_corner: LatLng, bottom_right_corner: LatLng, limit: Int?=null) : Double? {
         val measurers = retrieve(top_left_corner, bottom_right_corner, limit)
 
-        if (measurers.isEmpty()) {
-            return null
-        }
-        else {
-            return measurers.map { m -> m.value }.average()
-        }
+        return if (measurers.isEmpty()) null else measurers.map { m -> m.value }.average()
     }
 
     suspend fun sampleAndStore() : List<WaveMeasure> {

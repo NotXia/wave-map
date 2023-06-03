@@ -1,25 +1,24 @@
 package com.example.wavemap.measures.samplers
 
-import android.Manifest
 import android.annotation.SuppressLint
 import android.bluetooth.*
 import android.content.BroadcastReceiver
 import android.content.Context
 import android.content.Intent
 import android.content.IntentFilter
-import android.content.pm.PackageManager
 import android.os.Build
-import androidx.core.content.ContextCompat
 import androidx.core.content.ContextCompat.RECEIVER_EXPORTED
 import androidx.core.content.ContextCompat.registerReceiver
 import com.example.wavemap.db.*
 import com.example.wavemap.measures.WaveMeasure
 import com.example.wavemap.measures.WaveSampler
 import com.example.wavemap.utilities.LocationUtils
+import com.example.wavemap.utilities.Permissions
 import com.google.android.gms.maps.model.LatLng
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import kotlin.coroutines.resume
+import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
 
 
@@ -36,25 +35,19 @@ class BluetoothSampler(
         }
     }
 
+    // Measures with a complete scan and by checking paired devices
     override suspend fun sample() : List<WaveMeasure> {
-        if ( ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_SCAN) != PackageManager.PERMISSION_GRANTED ) {
-            throw SecurityException("Missing BLUETOOTH_SCAN permission")
-        }
-        if ( ContextCompat.checkSelfPermission(context, Manifest.permission.BLUETOOTH_CONNECT) != PackageManager.PERMISSION_GRANTED ) {
-            throw SecurityException("Missing BLUETOOTH_CONNECT permissions")
-        }
-        if ( ContextCompat.checkSelfPermission(context, Manifest.permission.ACCESS_FINE_LOCATION) != PackageManager.PERMISSION_GRANTED ) {
-            throw SecurityException("Missing ACCESS_FINE_LOCATION permissions")
-        }
-        val timestamp = System.currentTimeMillis()
+        if ( !Permissions.check(context, Permissions.noise) ) { throw SecurityException("Missing noise permissions") }
 
+        val timestamp = System.currentTimeMillis()
         return sampleWithDiscovery(timestamp) + sampleConnected(timestamp)
     }
 
     @SuppressLint("MissingPermission")
     private suspend fun sampleConnected(timestamp: Long) : List<WaveMeasure> = suspendCoroutine { cont ->
-        val bt_manager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
-        val pairedDevices: Set<BluetoothDevice>? = bt_manager.adapter?.bondedDevices
+        val bt_manager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager?
+            ?: return@suspendCoroutine cont.resumeWithException( RuntimeException("Cannot get BluetoothManager") )
+        val pairedDevices: Set<BluetoothDevice> = bt_manager.adapter.bondedDevices
         val bt_list = mutableListOf<MeasureTable>()
 
         suspend fun getRSSI(device: BluetoothDevice) : Int? = suspendCoroutine { cont ->
@@ -74,15 +67,14 @@ class BluetoothSampler(
         }
 
         GlobalScope.launch {
-            pairedDevices?.forEach { device ->
+            pairedDevices.forEach { device ->
                 val rssi = getRSSI(device)
 
                 if (rssi != null) {
                     val current_location: LatLng = LocationUtils.getCurrent(context)
 
-                    bt_list.add( MeasureTable(0, MeasureType.BLUETOOTH,
-                        rssi.toDouble(), timestamp, current_location.latitude, current_location.longitude,
-                        device.address ?: "")
+                    bt_list.add(
+                        MeasureTable(0, MeasureType.BLUETOOTH, rssi.toDouble(), timestamp, current_location.latitude, current_location.longitude, device.address ?: "")
                     )
                     db.bssidDAO().insert( BSSIDTable(device.address, if (device.name != null) device.name else device.address, BSSIDType.BLUETOOTH) )
                 }
@@ -95,30 +87,25 @@ class BluetoothSampler(
     @SuppressLint("MissingPermission")
     private suspend fun sampleWithDiscovery(timestamp: Long) : List<WaveMeasure> = suspendCoroutine { cont ->
         val bt_list = mutableListOf<MeasureTable>()
-
         val bt_receiver = object : BroadcastReceiver() {
             @SuppressLint("MissingPermission")
             override fun onReceive(context: Context, intent: Intent) {
-                if (intent.action == BluetoothAdapter.ACTION_DISCOVERY_FINISHED) {
-                    context.unregisterReceiver(this)
-                    return cont.resume( bt_list )
-                }
+                when (intent.action) {
+                    BluetoothAdapter.ACTION_DISCOVERY_FINISHED -> {
+                        context.unregisterReceiver(this)
+                        return cont.resume( bt_list )
+                    }
 
-                if (intent.action == BluetoothDevice.ACTION_FOUND) {
-                    GlobalScope.launch {
-                        val device: BluetoothDevice? = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) {
-                            intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE, BluetoothDevice::class.java)
-                        } else {
-                            intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
-                        }
-                        if (device == null) { return@launch }
+                    BluetoothDevice.ACTION_FOUND -> GlobalScope.launch {
+                        val device: BluetoothDevice? =
+                            if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE, BluetoothDevice::class.java)
+                            else intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
+                            if (device == null) { return@launch }
                         val rssi = intent.getShortExtra(BluetoothDevice.EXTRA_RSSI, Short.MIN_VALUE).toInt()
-                        val current_location: LatLng = LocationUtils.getCurrent(context) // Require location at each measure for more accuracy
+                        val current_location: LatLng = LocationUtils.getCurrent(context) // Request location for each measure for more accuracy
 
-                        bt_list.add( MeasureTable(0, MeasureType.BLUETOOTH,
-                            rssi.toDouble(),
-                            timestamp, current_location.latitude, current_location.longitude,
-                            device.address ?: "")
+                        bt_list.add(
+                            MeasureTable(0, MeasureType.BLUETOOTH, rssi.toDouble(), timestamp, current_location.latitude, current_location.longitude, device.address ?: "")
                         )
                         db.bssidDAO().insert( BSSIDTable(device.address, if (device.name != null) device.name else device.address, BSSIDType.BLUETOOTH) )
                     }
@@ -126,15 +113,14 @@ class BluetoothSampler(
             }
         }
 
-        var intent_filter = IntentFilter(BluetoothDevice.ACTION_FOUND)
+        val bt_manager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
+        val intent_filter = IntentFilter(BluetoothDevice.ACTION_FOUND)
         intent_filter.addAction(BluetoothAdapter.ACTION_DISCOVERY_FINISHED)
         registerReceiver(context, bt_receiver, intent_filter, RECEIVER_EXPORTED)
-
-        val bt_manager = context.getSystemService(Context.BLUETOOTH_SERVICE) as BluetoothManager
         bt_manager.adapter.startDiscovery()
     }
 
-    override suspend fun store(measures: List<WaveMeasure>) : Unit {
+    override suspend fun store(measures: List<WaveMeasure>) {
         for (measure in measures) {
             db.measureDAO().insert( MeasureTable(0, MeasureType.BLUETOOTH, measure.value, measure.timestamp, measure.latitude, measure.longitude, measure.info) )
         }
