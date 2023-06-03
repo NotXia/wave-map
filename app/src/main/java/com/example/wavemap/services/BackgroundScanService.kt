@@ -25,6 +25,7 @@ import com.google.android.gms.location.*
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
 import com.example.wavemap.R
+import com.example.wavemap.ui.main.MainActivity
 import com.example.wavemap.utilities.LocationUtils.Companion.metersToLatitudeOffset
 import com.example.wavemap.utilities.LocationUtils.Companion.metersToLongitudeOffset
 import com.example.wavemap.utilities.Permissions
@@ -191,6 +192,10 @@ class BackgroundScanService : Service() {
         notification_builder.setContentTitle(getString(R.string.notification_uncovered_area)).setContentText(getString(R.string.notification_uncovered_area_text))
             .setSmallIcon(R.mipmap.ic_launcher_round)
             .setPriority(NotificationCompat.PRIORITY_DEFAULT)
+            .setContentIntent(TaskStackBuilder.create(this).run {
+                addNextIntentWithParentStack(Intent(applicationContext, MainActivity::class.java))
+                getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
+            })
         NotificationManagerCompat.from(applicationContext).notify(1, notification_builder.build())
     }
 }
