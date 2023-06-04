@@ -5,6 +5,7 @@ import android.os.Bundle
 import android.text.InputType
 import androidx.preference.EditTextPreference
 import androidx.preference.Preference
+import androidx.preference.PreferenceCategory
 import androidx.preference.PreferenceFragmentCompat
 import androidx.preference.PreferenceManager
 import com.example.wavemap.R
@@ -12,6 +13,7 @@ import com.example.wavemap.utilities.Constants
 
 
 open class MeasureSettingsFragment(
+    private val label_id: Int,
     private val key: String,
     private val measure_unit: String,
     private val range_bad_default: Double,
@@ -34,6 +36,10 @@ open class MeasureSettingsFragment(
         editor.commit()
 
         // Creating settings elements
+        val category = PreferenceCategory(preferenceScreen.context)
+        category.title = getString(label_id)
+        preferenceScreen.addPreference(category)
+
         preferenceScreen.addPreference(createEditText(
             "${key}_range_bad", getString(R.string.range_bad),
             Preference.SummaryProvider<EditTextPreference> { preference -> "${ preference.text ?: range_bad_default } ${measure_unit}" },
