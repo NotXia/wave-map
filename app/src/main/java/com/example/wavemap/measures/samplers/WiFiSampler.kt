@@ -167,18 +167,18 @@ class WiFiSampler(
 
     override suspend fun store(measures: List<WaveMeasure>) {
         for (measure in measures) {
-            db.measureDAO().insert( MeasureTable(measure.author, MeasureType.WIFI, measure.value, measure.timestamp, measure.latitude, measure.longitude, measure.info) )
+            db.measureDAO().insert( MeasureTable(MeasureType.WIFI, measure.value, measure.timestamp, measure.latitude, measure.longitude, measure.info, measure.shared) )
         }
     }
 
-    override suspend fun retrieve(top_left_corner: LatLng, bottom_right_corner: LatLng, limit: Int?) : List<WaveMeasure> {
+    override suspend fun retrieve(top_left_corner: LatLng, bottom_right_corner: LatLng, limit: Int?, get_shared: Boolean) : List<WaveMeasure> {
         if (bssid == null) {
             return (
-                db.measureDAO().get(MeasureType.WIFI, top_left_corner.latitude, top_left_corner.longitude, bottom_right_corner.latitude, bottom_right_corner.longitude, limit ?: -1)
+                db.measureDAO().get(MeasureType.WIFI, top_left_corner.latitude, top_left_corner.longitude, bottom_right_corner.latitude, bottom_right_corner.longitude, limit ?: -1, get_shared)
             )
         }
         else {
-            var measures = db.measureDAO().get(MeasureType.WIFI, top_left_corner.latitude, top_left_corner.longitude, bottom_right_corner.latitude, bottom_right_corner.longitude, -1)
+            var measures = db.measureDAO().get(MeasureType.WIFI, top_left_corner.latitude, top_left_corner.longitude, bottom_right_corner.latitude, bottom_right_corner.longitude, -1, get_shared)
             measures = measures.filter{ m -> m.info == bssid }
             if (limit != null) { measures = measures.subList(0, min(limit, measures.size)) }
             return measures

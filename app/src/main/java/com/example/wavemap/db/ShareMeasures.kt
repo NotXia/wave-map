@@ -42,9 +42,9 @@ class ShareMeasures {
 
                 // Measures with a timestamp close to an existing measure are changed to have the same timestamp
                 if (abs(nearest_timestamp - it.timestamp) <= Constants.SHARED_MERGE_TOLERANCE) {
-                    db.measureDAO().insert( MeasureTable(AuthorType.SHARE, it.type, it.value, nearest_timestamp, it.latitude, it.longitude, it.info) )
+                    db.measureDAO().insert( MeasureTable(it.type, it.value, nearest_timestamp, it.latitude, it.longitude, it.info, shared=true) )
                 } else {
-                    db.measureDAO().insert( MeasureTable(AuthorType.SHARE, it.type, it.value, it.timestamp, it.latitude, it.longitude, it.info) )
+                    db.measureDAO().insert( MeasureTable(it.type, it.value, it.timestamp, it.latitude, it.longitude, it.info, shared=true) )
                 }
             }
 

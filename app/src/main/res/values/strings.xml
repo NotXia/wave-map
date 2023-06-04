@@ -45,6 +45,8 @@
     <string name="tile_label">Tile value</string>
     <string name="tile_label_desc">Show the value of tiles</string>
 
+    <string name="use_shared">Use shared measurements</string>
+
     <!-- Notifications -->
     <string name="notification_uncovered_area">Uncovered area</string>
     <string name="notification_uncovered_area_desc">Notify if the area is uncovered from measurements</string>

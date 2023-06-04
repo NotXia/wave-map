@@ -47,6 +47,8 @@
     <string name="tile_label">Valore delle caselle</string>
     <string name="tile_label_desc">Visualizza il valore delle celle</string>
 
+    <string name="use_shared">Usa misure condivise</string>
+
     <!-- Notifications -->
     <string name="notification_uncovered_area">Area scoperta</string>
     <string name="notification_uncovered_area_desc">Notifica quando si entra in un\'area scoperta da misurazioni</string>

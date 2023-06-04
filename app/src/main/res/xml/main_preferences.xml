@@ -19,6 +19,10 @@
         <Preference
             app:fragment="com.example.wavemap.ui.settings.sections.LTESettingsFragment"
             app:title="@string/lte_settings" />
+        <CheckBoxPreference
+            android:defaultValue="true"
+            android:key="use_shared"
+            android:title="@string/use_shared" />
 
     </PreferenceCategory>
 

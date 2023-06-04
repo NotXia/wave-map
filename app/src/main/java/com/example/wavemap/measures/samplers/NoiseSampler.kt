@@ -76,18 +76,19 @@ class NoiseSampler(
 
     override suspend fun store(measures: List<WaveMeasure>) {
         for (measure in measures) {
-            db.measureDAO().insert( MeasureTable(measure.author, MeasureType.NOISE, measure.value, measure.timestamp, measure.latitude, measure.longitude, measure.info) )
+            db.measureDAO().insert( MeasureTable(MeasureType.NOISE, measure.value, measure.timestamp, measure.latitude, measure.longitude, measure.info, measure.shared) )
         }
     }
 
-    override suspend fun retrieve(top_left_corner: LatLng, bottom_right_corner: LatLng, limit: Int?) : List<WaveMeasure> {
+    override suspend fun retrieve(top_left_corner: LatLng, bottom_right_corner: LatLng, limit: Int?, get_shared: Boolean) : List<WaveMeasure> {
         return db.measureDAO().get(
             MeasureType.NOISE,
             top_left_corner.latitude,
             top_left_corner.longitude,
             bottom_right_corner.latitude,
             bottom_right_corner.longitude,
-            limit ?: -1
+            limit ?: -1,
+            get_shared
         )
     }
 }

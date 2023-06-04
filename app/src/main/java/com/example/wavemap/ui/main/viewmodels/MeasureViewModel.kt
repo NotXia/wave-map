@@ -16,6 +16,7 @@ abstract class MeasureViewModel(application : Application) : AndroidViewModel(ap
     var values_scale : Pair<Double, Double>? = null
     var color_range_size : Int = Constants.RANGE_SIZE_DEFAULT
     var limit : Int? = null
+    var get_shared : Boolean = true
 
     suspend fun measure() {
         sampler.sampleAndStore()
@@ -33,7 +34,8 @@ abstract class MeasureViewModel(application : Application) : AndroidViewModel(ap
                 val tile_average = sampler.average(
                     curr_top_left,
                     LatLng(curr_top_left.latitude-latitude_step, curr_top_left.longitude+longitude_step),
-                    limit
+                    limit,
+                    get_shared
                 )
                 if (tile_average != null) { measures.add(tile_average) }
 
@@ -55,5 +57,6 @@ abstract class MeasureViewModel(application : Application) : AndroidViewModel(ap
         )
         limit = preferences.getString("${preferences_prefix}_past_limit", "1")!!.toInt()
         color_range_size = preferences.getString("${preferences_prefix}_range_size", "${Constants.RANGE_SIZE_DEFAULT}")!!.toInt()
+        get_shared = preferences.getBoolean("use_shared", true)
     }
 }

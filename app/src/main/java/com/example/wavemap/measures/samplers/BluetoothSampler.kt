@@ -100,7 +100,7 @@ class BluetoothSampler(
                         val device: BluetoothDevice? =
                             if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE, BluetoothDevice::class.java)
                             else intent.getParcelableExtra(BluetoothDevice.EXTRA_DEVICE)
-                            if (device == null) { return@launch }
+                        if (device == null) { return@launch }
                         val rssi = intent.getShortExtra(BluetoothDevice.EXTRA_RSSI, Short.MIN_VALUE).toInt()
                         val current_location: LatLng = LocationUtils.getCurrent(context) // Request location for each measure for more accuracy
 
@@ -122,18 +122,18 @@ class BluetoothSampler(
 
     override suspend fun store(measures: List<WaveMeasure>) {
         for (measure in measures) {
-            db.measureDAO().insert( MeasureTable(measure.author, MeasureType.BLUETOOTH, measure.value, measure.timestamp, measure.latitude, measure.longitude, measure.info) )
+            db.measureDAO().insert( MeasureTable(MeasureType.BLUETOOTH, measure.value, measure.timestamp, measure.latitude, measure.longitude, measure.info, measure.shared) )
         }
     }
 
-    override suspend fun retrieve(top_left_corner: LatLng, bottom_right_corner: LatLng, limit: Int?) : List<WaveMeasure> {
+    override suspend fun retrieve(top_left_corner: LatLng, bottom_right_corner: LatLng, limit: Int?, get_shared: Boolean) : List<WaveMeasure> {
         if (device_name == null) {
             return (
-                db.measureDAO().get(MeasureType.BLUETOOTH, top_left_corner.latitude, top_left_corner.longitude, bottom_right_corner.latitude, bottom_right_corner.longitude, limit ?: -1)
+                db.measureDAO().get(MeasureType.BLUETOOTH, top_left_corner.latitude, top_left_corner.longitude, bottom_right_corner.latitude, bottom_right_corner.longitude, limit ?: -1, get_shared)
             )
         }
         else {
-            var measures = db.measureDAO().get(MeasureType.BLUETOOTH, top_left_corner.latitude, top_left_corner.longitude, bottom_right_corner.latitude, bottom_right_corner.longitude, -1)
+            var measures = db.measureDAO().get(MeasureType.BLUETOOTH, top_left_corner.latitude, top_left_corner.longitude, bottom_right_corner.latitude, bottom_right_corner.longitude, -1, get_shared)
             measures = measures.filter{ m -> m.info == device_name }
             if (limit != null) { measures = measures.subList(0, Integer.min(limit, measures.size)) }
             return measures
