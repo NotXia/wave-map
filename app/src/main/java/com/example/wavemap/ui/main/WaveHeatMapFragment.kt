@@ -68,17 +68,17 @@ class WaveHeatMapFragment : Fragment() {
 
 
 
-    suspend fun changeViewModel(view_model : MeasureViewModel) {
+    fun changeViewModel(view_model : MeasureViewModel) {
         this.view_model = view_model
         refreshMap()
     }
 
-    suspend fun refreshMap() {
+    fun refreshMap() {
         if (!is_initialized) { return }
 
-        map_mutex.withLock {
-            withContext(Dispatchers.Main) {
-                google_map.clear()
+        lifecycleScope.launch(Dispatchers.IO) {
+            map_mutex.withLock {
+                withContext(Dispatchers.Main) { google_map.clear() }
                 fillScreenWithTiles()
             }
         }
@@ -217,37 +217,35 @@ class WaveHeatMapFragment : Fragment() {
      * Drawing
      * */
 
-    private fun drawTile(top_left_corner: LatLng) {
+    private suspend fun drawTile(top_left_corner: LatLng) {
         if (view_model.values_scale == null) { return }
 
         val top_right_corner = LatLng(top_left_corner.latitude, top_left_corner.longitude+metersToLongitudeOffset(tile_length_meters, top_left_corner.latitude))
         val bottom_right_corner = LatLng(top_left_corner.latitude-metersToLatitudeOffset(tile_length_meters), top_left_corner.longitude+metersToLongitudeOffset(tile_length_meters, top_left_corner.latitude))
         val bottom_left_corner = LatLng(top_left_corner.latitude-metersToLatitudeOffset(tile_length_meters), top_left_corner.longitude)
 
-        lifecycleScope.launch(Dispatchers.IO) {
-            val tile_average : Double? = view_model.averageOf(top_left_corner, bottom_right_corner)
-            var color = ColorUtils.setAlphaComponent(0, 0)
+        val tile_average : Double? = view_model.averageOf(top_left_corner, bottom_right_corner)
+        var color = ColorUtils.setAlphaComponent(0, 0)
 
-            if (tile_average != null) {
-                var hue = scaleToInterval(tile_average, view_model.values_scale!!, Constants.HUE_MEASURE_RANGE)
-                hue = scaleToRange(hue, Constants.HUE_MEASURE_RANGE, view_model.color_range_size)
-                color = ColorUtils.setAlphaComponent(ColorUtils.HSLToColor(floatArrayOf(hue.toFloat(), 1f, 0.6f)), 100)
-            }
+        if (tile_average != null) {
+            var hue = scaleToInterval(tile_average, view_model.values_scale!!, Constants.HUE_MEASURE_RANGE)
+            hue = scaleToRange(hue, Constants.HUE_MEASURE_RANGE, view_model.color_range_size)
+            color = ColorUtils.setAlphaComponent(ColorUtils.HSLToColor(floatArrayOf(hue.toFloat(), 1f, 0.6f)), 100)
+        }
 
-            withContext(Dispatchers.Main) {
-                google_map.addPolygon(
-                    PolygonOptions()
-                        .clickable(false)
-                        .fillColor(color)
-                        .strokeWidth(1.2f)
-                        .strokeColor(Color.argb(50, 0, 0, 0))
-                        .add(top_left_corner, top_right_corner, bottom_right_corner, bottom_left_corner)
-                )
+        withContext(Dispatchers.Main) {
+            google_map.addPolygon(
+                PolygonOptions()
+                    .clickable(false)
+                    .fillColor(color)
+                    .strokeWidth(1.2f)
+                    .strokeColor(Color.argb(50, 0, 0, 0))
+                    .add(top_left_corner, top_right_corner, bottom_right_corner, bottom_left_corner)
+            )
 
-                // Adds a label with the value to the tile
-                if (tile_average != null && pref_manager.getBoolean("show_tile_label", true)) {
-                    drawTileLabel(top_left_corner, "${tile_average.toInt()} ${view_model.measure_unit}")
-                }
+            // Adds a label with the value to the tile
+            if (tile_average != null && pref_manager.getBoolean("show_tile_label", true)) {
+                drawTileLabel(top_left_corner, "${tile_average.toInt()} ${view_model.measure_unit}")
             }
         }
     }
@@ -280,11 +278,16 @@ class WaveHeatMapFragment : Fragment() {
         if (marker != null) { markers.add(marker) }
     }
 
-    private fun fillScreenWithTiles() {
-        val top_left_visible = getReferenceTileContaining(
-            LatLng(google_map.projection.visibleRegion.latLngBounds.northeast.latitude, google_map.projection.visibleRegion.latLngBounds.southwest.longitude)
-        )
-        val bottom_right_visible = LatLng(google_map.projection.visibleRegion.latLngBounds.southwest.latitude, google_map.projection.visibleRegion.latLngBounds.northeast.longitude)
+    private suspend fun fillScreenWithTiles() {
+        lateinit var top_left_visible: LatLng
+        lateinit  var bottom_right_visible: LatLng
+
+        withContext(Dispatchers.Main) {
+            top_left_visible = getReferenceTileContaining(
+                LatLng(google_map.projection.visibleRegion.latLngBounds.northeast.latitude, google_map.projection.visibleRegion.latLngBounds.southwest.longitude)
+            )
+            bottom_right_visible = LatLng(google_map.projection.visibleRegion.latLngBounds.southwest.latitude, google_map.projection.visibleRegion.latLngBounds.northeast.longitude)
+        }
 
         if (top_left_visible.longitude > bottom_right_visible.longitude) { // Wrap-up area (Pacific Ocean)
             val left_side_bottom = LatLng(bottom_right_visible.latitude, 179.9)
@@ -300,7 +303,7 @@ class WaveHeatMapFragment : Fragment() {
         }
     }
 
-    private fun fillAreaWithTiles(top_left: LatLng, bottom_right: LatLng) {
+    private suspend fun fillAreaWithTiles(top_left: LatLng, bottom_right: LatLng) {
         var current_tile = top_left
 
         // Fill the screen with tiles

@@ -1,13 +1,11 @@
 package com.example.wavemap.ui.main
 
-import android.animation.Animator
-import android.animation.Animator.AnimatorListener
-import android.animation.ValueAnimator
 import android.content.Intent
 import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.graphics.Color
+import android.graphics.drawable.AnimationDrawable
 import android.os.Bundle
 import android.os.Handler
 import android.os.Looper
@@ -15,7 +13,6 @@ import android.util.Log
 import android.util.TypedValue
 import android.view.Menu
 import android.view.View
-import android.view.animation.LinearInterpolator
 import android.widget.AdapterView
 import android.widget.ArrayAdapter
 import android.widget.Spinner
@@ -66,8 +63,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var measure_spinner : Spinner
     private lateinit var fab_start_measure : FloatingActionButton
     private lateinit var fab_query : FloatingActionButton
-
-    private var fab_start_measure_loading_anim : ValueAnimator? = null
 
     private var periodic_scan_handler : Handler = Handler(Looper.getMainLooper())
 
@@ -137,7 +132,7 @@ class MainActivity : AppCompatActivity() {
 
         try {
             view_model.curr_sampler.view_model.loadSettingsPreferences() // In case the settings changed
-            lifecycleScope.launch { map_fragment.refreshMap() }
+            map_fragment.refreshMap()
             startPeriodicScan()
             BackgroundScanService.stop(this)
         }
@@ -207,7 +202,7 @@ class MainActivity : AppCompatActivity() {
                 fab_query.visibility = if (view_model.curr_sampler.view_model is QueryableMeasureViewModel) View.VISIBLE else View.INVISIBLE
 
                 // Disable measure fab if the sampler is already measuring
-                if (view_model.curr_sampler.currently_measuring) { disableMeasureFab() }
+                if (view_model.curr_sampler.currently_measuring.value == true) { disableMeasureFab() }
                 else { enableMeasureFab() }
             }
         }
@@ -217,6 +212,20 @@ class MainActivity : AppCompatActivity() {
         fab_start_measure.setOnClickListener {
             userTriggeredMeasure()
             resetPeriodicScan()
+        }
+
+        // Handle fab disabling and re-enabling
+        view_model.available_samplers.forEach { sampler_handler: MainViewModel.SamplerHandler ->
+            sampler_handler.currently_measuring.observe(this) { is_measuring: Boolean ->
+                if (view_model.curr_sampler.view_model == sampler_handler.view_model) {
+                    if (is_measuring) {
+                        disableMeasureFab()
+                    } else {
+                        map_fragment.refreshMap()
+                        enableMeasureFab()
+                    }
+                }
+            }
         }
     }
 
@@ -230,10 +239,8 @@ class MainActivity : AppCompatActivity() {
                 val items : ArrayList<CharSequence> = queries.map{ it.first }.toCollection(ArrayList())
 
                 MeasureFilterDialog(items){ index ->
-                    lifecycleScope.launch {
-                        queryable_model.changeQuery(queries[index].second)
-                        map_fragment.refreshMap()
-                    }
+                    queryable_model.changeQuery(queries[index].second)
+                    map_fragment.refreshMap()
                 }.show(supportFragmentManager, MeasureFilterDialog.TAG)
             }
         }
@@ -270,25 +277,15 @@ class MainActivity : AppCompatActivity() {
     }
 
     private suspend fun measureOne(sampler: MainViewModel.SamplerHandler) {
-        if (sampler.currently_measuring) { return } // The sampler is already measuring
+        if (sampler.currently_measuring.value == true) { return } // The sampler is already measuring
         var error : Exception? = null
 
-        sampler.currently_measuring = true
-        if (view_model.curr_sampler.view_model == sampler.view_model) {
-            withContext(Dispatchers.Main) { disableMeasureFab() }
-        }
-
+        withContext(Dispatchers.Main) { view_model.startMeasuring(sampler) }
         try {
             sampler.view_model.measure()
         }
         catch (err: Exception) { error = err }
-
-        // Execute only if, at the end of the measure, the selected sampler is still this one (user may have changed the sampler in the meantime)
-        if (view_model.curr_sampler.view_model == sampler.view_model) {
-            map_fragment.refreshMap()
-            withContext(Dispatchers.Main) { enableMeasureFab() }
-        }
-        sampler.currently_measuring = false
+        withContext(Dispatchers.Main) { view_model.endMeasuring(sampler) }
 
         if (error != null) { throw error }
     }
@@ -323,48 +320,24 @@ class MainActivity : AppCompatActivity() {
      * */
 
     private fun disableMeasureFab() {
-        fab_start_measure.isClickable = false
-        fab_start_measure.backgroundTintList = ColorStateList.valueOf(Color.LTGRAY)
-
-        // Loading animation handling
-        val loading_res = intArrayOf(
-            R.drawable.loading1,
-            R.drawable.loading2,
-            R.drawable.loading3,
-            R.drawable.loading4,
-            R.drawable.loading5,
-            R.drawable.loading6,
-            R.drawable.loading7,
-        )
-        fab_start_measure_loading_anim = ValueAnimator.ofInt(0, loading_res.size - 1).setDuration(500)
-        fab_start_measure_loading_anim?.interpolator = LinearInterpolator()
-        fab_start_measure_loading_anim?.addListener(object : AnimatorListener {
-            override fun onAnimationStart(animation: Animator) {}
-            override fun onAnimationCancel(animation: Animator) {}
-            override fun onAnimationRepeat(animation: Animator) {}
-
-            override fun onAnimationEnd(animation: Animator) {
-                fab_start_measure_loading_anim?.start()
-            }
-        })
-        fab_start_measure_loading_anim?.addUpdateListener { animation ->
-            fab_start_measure.setImageResource( loading_res[animation.animatedValue as Int] )
+        fab_start_measure.apply{
+            isClickable = false
+            backgroundTintList = ColorStateList.valueOf(Color.LTGRAY)
+            setImageResource(R.drawable.loading)
+            drawable.setTint(Color.LTGRAY)
         }
-        fab_start_measure_loading_anim?.start()
+        val animation = fab_start_measure.drawable as AnimationDrawable
+        animation.start()
     }
 
     private fun enableMeasureFab() {
-        fab_start_measure.isClickable = true
-
         val primary_color = TypedValue()
         theme.resolveAttribute(androidx.transition.R.attr.colorPrimary, primary_color, true)
-        fab_start_measure.backgroundTintList = ColorStateList.valueOf(primary_color.data)
-        if (fab_start_measure_loading_anim != null) {
-            fab_start_measure_loading_anim?.removeAllListeners()
-            fab_start_measure_loading_anim?.cancel()
-            fab_start_measure_loading_anim = null
+        fab_start_measure.apply {
+            isClickable = true
+            backgroundTintList = ColorStateList.valueOf(primary_color.data)
+            setImageResource(android.R.drawable.ic_input_add)
         }
-        fab_start_measure.setImageResource(android.R.drawable.ic_input_add)
     }
 
 

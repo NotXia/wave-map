@@ -2,6 +2,7 @@ package com.example.wavemap.ui.main.viewmodels
 
 import android.app.Application
 import androidx.lifecycle.AndroidViewModel
+import androidx.lifecycle.MutableLiveData
 import com.example.wavemap.R
 
 class MainViewModel(application : Application) : AndroidViewModel(application) {
@@ -10,7 +11,7 @@ class MainViewModel(application : Application) : AndroidViewModel(application) {
         val view_model : MeasureViewModel,
         val label : String
     ) {
-        var currently_measuring : Boolean = false // To prevent multiple measure requests
+        var currently_measuring : MutableLiveData<Boolean> = MutableLiveData<Boolean>(false) // To prevent multiple measure requests
     }
 
     val available_samplers = arrayOf(
@@ -24,4 +25,11 @@ class MainViewModel(application : Application) : AndroidViewModel(application) {
     val curr_sampler : SamplerHandler
         get() = available_samplers[curr_sampler_index]
 
+    fun startMeasuring(sampler: SamplerHandler) {
+        sampler.currently_measuring.value = true
+    }
+
+    fun endMeasuring(sampler: SamplerHandler) {
+        sampler.currently_measuring.value = false
+    }
 }
