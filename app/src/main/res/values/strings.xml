@@ -50,6 +50,11 @@
     <string name="notification_uncovered_area_desc">Notify if the area is uncovered from measurements</string>
     <string name="notification_uncovered_area_text">This area is not covered by measurements</string>
 
+    <string name="export_download">Export download</string>
+    <string name="export_download_desc">Notify when the measurements file has been saved</string>
+    <string name="export_download_text">File saved successfully</string>
+
+
     <!-- Dialog -->
     <string name="exit">Exit</string>
     <string name="cancel">Cancel</string>

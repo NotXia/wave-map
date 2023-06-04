@@ -52,6 +52,11 @@
     <string name="notification_uncovered_area_desc">Notifica quando si entra in un\'area scoperta da misurazioni</string>
     <string name="notification_uncovered_area_text">Questa area non è coperta da misurazioni</string>
 
+    <string name="export_download">Download esportazione</string>
+    <string name="export_download_desc">Notificha quando il file delle misure esportate è stato salvato</string>
+    <string name="export_download_text">File salvato con successo</string>
+
+
     <!-- Dialog -->
     <string name="exit">Esci</string>
     <string name="cancel">Annulla</string>
