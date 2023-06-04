@@ -32,6 +32,8 @@ class ImportActivity : AppCompatActivity() {
     private lateinit var size_textview : TextView
     private lateinit var import_button : Button
 
+    private lateinit var import : ShareMeasures.ExportFormat
+
     override fun onCreate(savedInstanceState: Bundle?) {
         super.onCreate(savedInstanceState)
         setContentView(R.layout.activity_import)
@@ -40,30 +42,38 @@ class ImportActivity : AppCompatActivity() {
         size_textview = findViewById(R.id.size_textview)
         import_button = findViewById(R.id.file_import_button)
 
-        val intent_uri = intent.data ?: exitProcess(0)
-        val import = ShareMeasures.parse(readFromURI(intent_uri))
         val db = Room.databaseBuilder(applicationContext, WaveDatabase::class.java, Constants.DATABASE_NAME).build()
-        if (import.db_version != db.openHelper.writableDatabase.version) {
-            Toast.makeText(baseContext, getString(R.string.error_occurred), Toast.LENGTH_SHORT).show()
-            return
+        val intent_uri = intent.data ?: exitProcess(0)
+
+        try {
+            import = ShareMeasures.parse(readFromURI(intent_uri))
         }
+        catch (err: Exception) {
+            Toast.makeText(baseContext, getString(R.string.error_occurred), Toast.LENGTH_SHORT).show()
+        }
+
 
         date_textview.text = getString(R.string.export_date, SimpleDateFormat.getDateTimeInstance().format(Date(import.timestamp)))
         size_textview.text = getString(R.string.import_size, import.measures.size)
         import_button.setOnClickListener {
             lifecycleScope.launch(Dispatchers.IO) {
-                val loading_dialog = LoadingDialog{
-                    if (supportFragmentManager.findFragmentByTag(CancelOperationDialog.TAG) != null) { return@LoadingDialog }
+                try {
+                    val loading_dialog = LoadingDialog{
+                        if (supportFragmentManager.findFragmentByTag(CancelOperationDialog.TAG) != null) { return@LoadingDialog }
 
-                    CancelOperationDialog(R.string.cancel_import, null){
-                        backToMainApp()
-                    }.show(supportFragmentManager, CancelOperationDialog.TAG)
+                        CancelOperationDialog(R.string.cancel_import, null){
+                            backToMainApp()
+                        }.show(supportFragmentManager, CancelOperationDialog.TAG)
+                    }
+
+                    withContext(Dispatchers.Main) { loading_dialog.show(supportFragmentManager, LoadingDialog.TAG) }
+                    ShareMeasures.import(db, import)
+                    withContext(Dispatchers.Main) { loading_dialog.dismiss() }
+                    backToMainApp()
                 }
-
-                withContext(Dispatchers.Main) { loading_dialog.show(supportFragmentManager, LoadingDialog.TAG) }
-                ShareMeasures.import(db, import)
-                withContext(Dispatchers.Main) { loading_dialog.dismiss() }
-                backToMainApp()
+                catch (err: Exception) {
+                    Toast.makeText(baseContext, getString(R.string.error_occurred), Toast.LENGTH_SHORT).show()
+                }
             }
         }
     }

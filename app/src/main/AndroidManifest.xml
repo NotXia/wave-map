@@ -41,12 +41,10 @@
             android:exported="true"
             android:launchMode="singleTask" >
 
-            <intent-filter
-                android:icon="@mipmap/ic_launcher"
-                android:label="@string/import_measures">
+            <intent-filter android:icon="@mipmap/ic_launcher" android:label="@string/import_measures">
                 <action android:name="android.intent.action.VIEW" />
                 <category android:name="android.intent.category.DEFAULT" />
-                <data android:scheme="content" android:host="*" android:mimeType="text/*" android:pathPattern=".*\\.wavemap"/>
+                <data android:scheme="content" android:host="*" android:mimeType="*/*" android:pathPattern=".*\\.wavemap" />
             </intent-filter>
         </activity>
 

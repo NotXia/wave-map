@@ -63,9 +63,9 @@ class FileExportFragment : Fragment() {
                 try {
                     withContext(Dispatchers.Main) { loading_dialog.show(childFragmentManager, LoadingDialog.TAG) }
                     val exported_data = ShareMeasures.export(db)
+                    out_dir.mkdir()
                     val fout = FileOutputStream(out_path)
 
-                    out_dir.mkdir()
                     fout.write(exported_data.toByteArray())
                     fout.close()
                 }
@@ -95,7 +95,7 @@ class FileExportFragment : Fragment() {
     private fun share(file: File) {
         val to_share_uri = FileProvider.getUriForFile(requireContext(), "${requireContext().applicationContext.packageName}.provider", file);
         val share_intent = Intent(Intent.ACTION_SEND)
-        share_intent.type = "text/*";
+        share_intent.type = "text/json";
         share_intent.addFlags(Intent.FLAG_GRANT_READ_URI_PERMISSION)
         share_intent.putExtra(Intent.EXTRA_STREAM, Uri.parse(to_share_uri.toString()))
         share_intent.clipData = ClipData(getString(R.string.wave_map_export), arrayOf( share_intent.type ), ClipData.Item(to_share_uri))
