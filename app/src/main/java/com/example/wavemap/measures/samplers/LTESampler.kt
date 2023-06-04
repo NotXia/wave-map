@@ -38,7 +38,7 @@ class LTESampler(
             val current_location: LatLng = LocationUtils.getCurrent(context)
 
             return@launch cont.resume( listOf(
-                MeasureTable(0, MeasureType.LTE,
+                MeasureTable(MeasureType.LTE,
                 lte_info.cellSignalStrength.dbm.toDouble(),
                 System.currentTimeMillis(),
                 current_location.latitude, current_location.longitude, "")
@@ -49,7 +49,7 @@ class LTESampler(
 
     override suspend fun store(measures: List<WaveMeasure>) {
         for (measure in measures) {
-            db.measureDAO().insert( MeasureTable(0, MeasureType.LTE, measure.value, measure.timestamp, measure.latitude, measure.longitude, measure.info) )
+            db.measureDAO().insert( MeasureTable(measure.author, MeasureType.LTE, measure.value, measure.timestamp, measure.latitude, measure.longitude, measure.info) )
         }
     }
 

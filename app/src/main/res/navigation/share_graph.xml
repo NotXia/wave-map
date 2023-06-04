@@ -1,0 +1,22 @@
+<?xml version="1.0" encoding="utf-8"?>
+<navigation xmlns:android="http://schemas.android.com/apk/res/android"
+    xmlns:app="http://schemas.android.com/apk/res-auto"
+    xmlns:tools="http://schemas.android.com/tools"
+    android:id="@+id/share_graph"
+    app:startDestination="@id/shareMainFragment">
+
+    <fragment
+        android:id="@+id/shareMainFragment"
+        android:name="com.example.wavemap.ui.share.fragments.ShareMainFragment"
+        android:label="@string/share_measurement"
+        tools:layout="@layout/fragment_share_main" >
+        <action
+            android:id="@+id/action_shareMainFragment_to_exportFragment"
+            app:destination="@id/fileExportFragment" />
+    </fragment>
+    <fragment
+        android:id="@+id/fileExportFragment"
+        android:name="com.example.wavemap.ui.share.fragments.FileExportFragment"
+        android:label="fragment_export"
+        tools:layout="@layout/fragment_file_export" />
+</navigation>

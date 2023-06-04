@@ -93,7 +93,7 @@ class WiFiSampler(
                         db.bssidDAO().insert( BSSIDTable(wifi_info.bssid, createWiFiName(wifi_info.ssid, wifi_info.bssid, wifi_info.frequency), BSSIDType.WIFI) )
                         try {
                             cont.resume(
-                                MeasureTable(0, MeasureType.WIFI, wifi_info.rssi.toDouble(), timestamp, current_location.latitude, current_location.longitude, wifi_info.bssid)
+                                MeasureTable(MeasureType.WIFI, wifi_info.rssi.toDouble(), timestamp, current_location.latitude, current_location.longitude, wifi_info.bssid)
                             )
                         } catch (err : Exception) { /* Just in case */ }
                     }
@@ -114,7 +114,7 @@ class WiFiSampler(
 
                 db.bssidDAO().insert( BSSIDTable(wifi_info.bssid, createWiFiName(wifi_info.ssid, wifi_info.bssid, wifi_info.frequency), BSSIDType.WIFI) )
                 cont.resume(
-                    MeasureTable(0, MeasureType.WIFI, wifi_info.rssi.toDouble(), timestamp, current_location.latitude, current_location.longitude, wifi_info.bssid)
+                    MeasureTable(MeasureType.WIFI, wifi_info.rssi.toDouble(), timestamp, current_location.latitude, current_location.longitude, wifi_info.bssid)
                 )
             }
         }
@@ -139,7 +139,7 @@ class WiFiSampler(
                     for (wifi in results) {
                         val ssid = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.TIRAMISU) wifi.wifiSsid.toString().drop(1).dropLast(1).trim() else wifi.SSID
 
-                        wifi_list.add( MeasureTable(0, MeasureType.WIFI, wifi.level.toDouble(), timestamp, current_location.latitude, current_location.longitude, wifi.BSSID) )
+                        wifi_list.add( MeasureTable(MeasureType.WIFI, wifi.level.toDouble(), timestamp, current_location.latitude, current_location.longitude, wifi.BSSID) )
                         db.bssidDAO().insert( BSSIDTable(wifi.BSSID, createWiFiName(ssid, wifi.BSSID, wifi.frequency), BSSIDType.WIFI) )
                     }
 
@@ -167,7 +167,7 @@ class WiFiSampler(
 
     override suspend fun store(measures: List<WaveMeasure>) {
         for (measure in measures) {
-            db.measureDAO().insert( MeasureTable(0, MeasureType.WIFI, measure.value, measure.timestamp, measure.latitude, measure.longitude, measure.info) )
+            db.measureDAO().insert( MeasureTable(measure.author, MeasureType.WIFI, measure.value, measure.timestamp, measure.latitude, measure.longitude, measure.info) )
         }
     }
 

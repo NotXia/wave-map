@@ -36,6 +36,7 @@ import com.example.wavemap.measures.samplers.WiFiSampler
 import com.example.wavemap.services.BackgroundScanService
 import com.example.wavemap.ui.main.viewmodels.*
 import com.example.wavemap.ui.settings.SettingsActivity
+import com.example.wavemap.ui.share.ShareActivity
 import com.example.wavemap.utilities.Permissions
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.Dispatchers
@@ -164,6 +165,7 @@ class MainActivity : AppCompatActivity() {
 
         menuInflater.inflate(R.menu.menu_options, menu)
         menu.findItem(R.id.menu_settings).intent = Intent(this, SettingsActivity::class.java)
+        menu.findItem(R.id.menu_share).intent = Intent(this, ShareActivity::class.java)
 
         return true
     }

@@ -74,7 +74,7 @@ class BluetoothSampler(
                     val current_location: LatLng = LocationUtils.getCurrent(context)
 
                     bt_list.add(
-                        MeasureTable(0, MeasureType.BLUETOOTH, rssi.toDouble(), timestamp, current_location.latitude, current_location.longitude, device.address ?: "")
+                        MeasureTable(MeasureType.BLUETOOTH, rssi.toDouble(), timestamp, current_location.latitude, current_location.longitude, device.address ?: "")
                     )
                     db.bssidDAO().insert( BSSIDTable(device.address, if (device.name != null) device.name else device.address, BSSIDType.BLUETOOTH) )
                 }
@@ -105,7 +105,7 @@ class BluetoothSampler(
                         val current_location: LatLng = LocationUtils.getCurrent(context) // Request location for each measure for more accuracy
 
                         bt_list.add(
-                            MeasureTable(0, MeasureType.BLUETOOTH, rssi.toDouble(), timestamp, current_location.latitude, current_location.longitude, device.address ?: "")
+                            MeasureTable(MeasureType.BLUETOOTH, rssi.toDouble(), timestamp, current_location.latitude, current_location.longitude, device.address ?: "")
                         )
                         db.bssidDAO().insert( BSSIDTable(device.address, if (device.name != null) device.name else device.address, BSSIDType.BLUETOOTH) )
                     }
@@ -122,7 +122,7 @@ class BluetoothSampler(
 
     override suspend fun store(measures: List<WaveMeasure>) {
         for (measure in measures) {
-            db.measureDAO().insert( MeasureTable(0, MeasureType.BLUETOOTH, measure.value, measure.timestamp, measure.latitude, measure.longitude, measure.info) )
+            db.measureDAO().insert( MeasureTable(measure.author, MeasureType.BLUETOOTH, measure.value, measure.timestamp, measure.latitude, measure.longitude, measure.info) )
         }
     }
 

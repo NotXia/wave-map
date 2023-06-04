@@ -16,13 +16,15 @@
     <string name="new_measure">Nuova misurazione</string>
     <string name="change_sampler">Cambia misuratore</string>
 
+    <string name="stop">Ferma</string>
+
 
     <!-- Settings -->
+    <string name="settings">Impostazioni</string>
     <string name="sampler_settings">Opzioni misuratori</string>
     <string name="scan_settings">Opzioni scansione</string>
     <string name="notification_settings">Notifiche</string>
     <string name="map_settings">Optioni mappa</string>
-    <string name="settings">Impostazioni</string>
     <string name="wifi_settings">Impostazioni Wi-Fi</string>
     <string name="lte_settings">Impostazioni LTE</string>
     <string name="noise_settings">Impostazioni suono</string>
@@ -81,5 +83,26 @@
 
     <string name="wifi_not_enabled">Il Wi-Fi non è attivo</string>
     <string name="bluetooth_not_enabled">Il Bluetooth non è attivo</string>
+
+    <!--  Sharing  -->
+    <string name="export">Esporta</string>
+    <string name="import_measures">Importa</string>
+    <string name="share_measurement">Condividi misurazioni</string>
+    <string name="share">Condividi</string>
+    <string name="save">Salva</string>
+
+    <string name="file_share_export">Esporta con file</string>
+    <string name="file_share_export_desc">Esporta le tue misurazioni su un file che potrai condividere con gli altri utenti</string>
+    <string name="file_share_import">Importa da file</string>
+
+    <string name="export_date">Data esportazione: %1$s</string>
+    <string name="import_size">Misure: %1$d</string>
+
+    <string name="cancel_import">Annulla importazione</string>
+    <string name="cancel_export">Annulla esportazione</string>
+
+    <string name="export_completed">Esportazione completata</string>
+
+    <string name="wave_map_export">Esportazione Wave Map</string>
 
 </resources>

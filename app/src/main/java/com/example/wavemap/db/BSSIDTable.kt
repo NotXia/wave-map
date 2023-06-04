@@ -22,4 +22,9 @@ interface BSSIDDAO {
 
     @Insert(onConflict = OnConflictStrategy.REPLACE)
     fun insert(bssid_entry: BSSIDTable)
+
+    @Query("SELECT * FROM bssids")
+    fun dump() : List<BSSIDTable>
+    @Insert(onConflict = OnConflictStrategy.IGNORE)
+    fun load_dump(bssids: List<BSSIDTable>)
 }

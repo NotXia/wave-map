@@ -21,5 +21,7 @@ class Constants {
         const val DATABASE_NAME = "wave"
 
         const val TILE_AVERAGE_STEPS = 3
+
+        const val SHARED_MERGE_TOLERANCE = 1000*60*10
     }
 }

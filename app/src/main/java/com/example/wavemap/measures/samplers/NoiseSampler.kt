@@ -70,13 +70,13 @@ class NoiseSampler(
             sum_db /= sample_time
             val current_location: LatLng = LocationUtils.getCurrent(context)
 
-            cont.resume(listOf( MeasureTable(0, MeasureType.NOISE, sum_db, System.currentTimeMillis(), current_location.latitude, current_location.longitude, "") ))
+            cont.resume(listOf( MeasureTable(MeasureType.NOISE, sum_db, System.currentTimeMillis(), current_location.latitude, current_location.longitude, "") ))
         }
     }
 
     override suspend fun store(measures: List<WaveMeasure>) {
         for (measure in measures) {
-            db.measureDAO().insert( MeasureTable(0, MeasureType.NOISE, measure.value, measure.timestamp, measure.latitude, measure.longitude, measure.info) )
+            db.measureDAO().insert( MeasureTable(measure.author, MeasureType.NOISE, measure.value, measure.timestamp, measure.latitude, measure.longitude, measure.info) )
         }
     }
 
