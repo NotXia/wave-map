@@ -7,8 +7,6 @@ import android.content.res.ColorStateList
 import android.graphics.Color
 import android.graphics.drawable.AnimationDrawable
 import android.os.Bundle
-import android.os.Handler
-import android.os.Looper
 import android.util.Log
 import android.util.TypedValue
 import android.view.Menu
@@ -40,9 +38,7 @@ import com.example.wavemap.ui.share.ShareActivity
 import com.example.wavemap.utilities.Permissions
 import com.google.android.material.floatingactionbutton.FloatingActionButton
 import kotlinx.coroutines.Dispatchers
-import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import kotlinx.coroutines.withContext
 
 
 class MainActivity : AppCompatActivity() {
@@ -56,7 +52,6 @@ class MainActivity : AppCompatActivity() {
     private val view_model : MainViewModel by viewModels()
 
     private lateinit var map_fragment : WaveHeatMapFragment
-    private lateinit var pref_manager : SharedPreferences
     private var successful_init = false
     private lateinit var permissions_check_and_init : ActivityResultLauncher<Array<String>>
     private lateinit var permissions_check_and_measure_current : ActivityResultLauncher<Array<String>>
@@ -64,8 +59,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var measure_spinner : Spinner
     private lateinit var fab_start_measure : FloatingActionButton
     private lateinit var fab_query : FloatingActionButton
-
-    private var periodic_scan_handler : Handler = Handler(Looper.getMainLooper())
 
     private var to_dismiss_dialogs = mutableListOf<DialogFragment>()
 
@@ -86,9 +79,7 @@ class MainActivity : AppCompatActivity() {
         } else {
             WaveHeatMapFragment()
         }
-        lifecycleScope.launch { map_fragment.changeViewModel(view_model.curr_sampler.view_model) }
-
-        pref_manager = PreferenceManager.getDefaultSharedPreferences(baseContext)
+        map_fragment.changeViewModel(view_model.curr_sampler.view_model)
 
         permissions_check_and_init = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
             // Checks if the minimum required permissions are granted
@@ -108,17 +99,7 @@ class MainActivity : AppCompatActivity() {
                 dialog.show(supportFragmentManager, OpenSettingsDialog.TAG)
             }
             else {
-                GlobalScope.launch(Dispatchers.IO) {
-                    try {
-                        measureOne(view_model.curr_sampler)
-                    }
-                    catch (err: Exception) {
-                        Log.e("measure", "User triggered measure: $err")
-                        withContext(Dispatchers.Main) {
-                            Toast.makeText(baseContext, getString(R.string.error_occurred), Toast.LENGTH_SHORT).show()
-                        }
-                    }
-                }
+                view_model.userTriggeredMeasure(view_model.curr_sampler)
             }
         }
     }
@@ -132,9 +113,9 @@ class MainActivity : AppCompatActivity() {
         super.onResume()
 
         try {
-            view_model.curr_sampler.view_model.loadSettingsPreferences() // In case the settings changed
+            view_model.curr_sampler.view_model.loadSettingsPreferences() // In case settings changed
             map_fragment.refreshMap()
-            startPeriodicScan()
+            view_model.startPeriodicScan()
             BackgroundScanService.stop(this)
         }
         catch (err : Exception) {
@@ -146,7 +127,7 @@ class MainActivity : AppCompatActivity() {
         super.onPause()
 
         try {
-            stopPeriodicScan()
+            view_model.stopPeriodicScan()
             to_dismiss_dialogs.forEach { try { it.dismiss() } catch (err: Exception) { /* Empty */ } }
             BackgroundScanService.start(this)
         }
@@ -185,24 +166,22 @@ class MainActivity : AppCompatActivity() {
         initFilterFAB()
         initTileChangeListener()
 
-        startPeriodicScan()
+        view_model.startPeriodicScan()
 
         successful_init = true
     }
 
     private fun initSamplerSelector() {
         measure_spinner.adapter = ArrayAdapter(this, android.R.layout.simple_spinner_dropdown_item, view_model.available_samplers.map{ it.label })
-        measure_spinner.setSelection(view_model.curr_sampler_index, false) // Selects the first element of the spinner (before adding the listener)
+        measure_spinner.setSelection(view_model.curr_sampler_index, false)
         measure_spinner.onItemSelectedListener = object : AdapterView.OnItemSelectedListener{
             override fun onNothingSelected(parent: AdapterView<*>?) {}
 
             override fun onItemSelected(parent: AdapterView<*>?, view: View?, position: Int, id: Long) {
-                view_model.curr_sampler_index = position
-                view_model.curr_sampler.view_model.loadSettingsPreferences()
-                lifecycleScope.launch { map_fragment.changeViewModel(view_model.curr_sampler.view_model) }
+                view_model.changeSampler(position)
+                map_fragment.changeViewModel(view_model.curr_sampler.view_model)
 
                 fab_query.visibility = if (view_model.curr_sampler.view_model is QueryableMeasureViewModel) View.VISIBLE else View.INVISIBLE
-
                 // Disable measure fab if the sampler is already measuring
                 if (view_model.curr_sampler.currently_measuring.value == true) { disableMeasureFab() }
                 else { enableMeasureFab() }
@@ -213,7 +192,7 @@ class MainActivity : AppCompatActivity() {
     private fun initNewMeasureFAB() {
         fab_start_measure.setOnClickListener {
             userTriggeredMeasure()
-            resetPeriodicScan()
+            view_model.resetPeriodicScan()
         }
 
         // Handle fab disabling and re-enabling
@@ -223,25 +202,38 @@ class MainActivity : AppCompatActivity() {
                     if (is_measuring) {
                         disableMeasureFab()
                     } else {
-                        map_fragment.refreshMap()
                         enableMeasureFab()
                     }
                 }
             }
         }
+
+        // Map refresh handling
+        view_model.should_refresh_map.observe(this) { should_update: Boolean ->
+            if (should_update) {
+                map_fragment.refreshMap()
+            }
+        }
+
+        // Error handling
+        view_model.user_measure_error.observe(this) { error: Exception? ->
+            if (error == null) { return@observe }
+            Log.e("measure", "User triggered measure: $error")
+            Toast.makeText(baseContext, getString(R.string.error_occurred), Toast.LENGTH_SHORT).show()
+        }
     }
 
     private fun initFilterFAB() {
         fab_query.setOnClickListener {
-            if (view_model.curr_sampler.view_model !is QueryableMeasureViewModel) { return@setOnClickListener }
-            val queryable_model = view_model.curr_sampler.view_model as QueryableMeasureViewModel
+            val sampler = view_model.curr_sampler
+            if (sampler.view_model !is QueryableMeasureViewModel) { return@setOnClickListener }
 
             lifecycleScope.launch(Dispatchers.IO) {
-                val queries = listOf(Pair(getString(R.string.remove_filter), null)) + queryable_model.listQueries()
+                val queries = view_model.getSamplerQueries(sampler)
                 val items : ArrayList<CharSequence> = queries.map{ it.first }.toCollection(ArrayList())
 
                 MeasureFilterDialog(items){ index ->
-                    queryable_model.changeQuery(queries[index].second)
+                    sampler.view_model.changeQuery(queries[index].second)
                     map_fragment.refreshMap()
                 }.show(supportFragmentManager, MeasureFilterDialog.TAG)
             }
@@ -250,10 +242,7 @@ class MainActivity : AppCompatActivity() {
 
     private fun initTileChangeListener() {
         map_fragment.current_tile.observe(this) {
-            if (pref_manager.getBoolean("tile_change_scan", false)) {
-                autoTriggeredMeasure()
-                resetPeriodicScan()
-            }
+            view_model.tileChangeMeasure()
         }
     }
 
@@ -278,20 +267,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private suspend fun measureOne(sampler: MainViewModel.SamplerHandler) {
-        if (sampler.currently_measuring.value == true) { return } // The sampler is already measuring
-        var error : Exception? = null
-
-        withContext(Dispatchers.Main) { view_model.startMeasuring(sampler) }
-        try {
-            sampler.view_model.measure()
-        }
-        catch (err: Exception) { error = err }
-        withContext(Dispatchers.Main) { view_model.endMeasuring(sampler) }
-
-        if (error != null) { throw error }
-    }
-
     private fun userTriggeredMeasure() {
         val sampler_permissions = getSamplerPermissionsHandler(view_model.curr_sampler.view_model.sampler)
         val to_show_dialog = sampler_permissions.checks_before_measure()
@@ -303,18 +278,6 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-    private fun autoTriggeredMeasure() {
-        view_model.available_samplers.forEach {
-            lifecycleScope.launch(Dispatchers.IO) {
-                try {
-                    measureOne(it)
-                }
-                catch (err: Exception) {
-                    Log.e("measure", "Auto triggered measure (${it.view_model}) $err")
-                }
-            }
-        }
-    }
 
 
     /**
@@ -342,29 +305,4 @@ class MainActivity : AppCompatActivity() {
         }
     }
 
-
-
-    /**
-     * Foreground periodic measures
-     * */
-
-    private fun startPeriodicScan() {
-        if (pref_manager.getBoolean("periodic_scan", false)) {
-            val delay = pref_manager.getString("periodic_scan_interval", "60")!!.toLong()
-
-            periodic_scan_handler.postDelayed({
-                autoTriggeredMeasure()
-                resetPeriodicScan()
-            }, delay * 1000)
-        }
-    }
-
-    private fun stopPeriodicScan() {
-        periodic_scan_handler.removeCallbacksAndMessages(null)
-    }
-
-    private fun resetPeriodicScan() {
-        stopPeriodicScan()
-        startPeriodicScan()
-    }
 }
