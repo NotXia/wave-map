@@ -60,8 +60,6 @@ class MainActivity : AppCompatActivity() {
     private lateinit var fab_start_measure : FloatingActionButton
     private lateinit var fab_query : FloatingActionButton
 
-    private var to_dismiss_dialogs = mutableListOf<DialogFragment>()
-
     private val BUNDLE_MAP_FRAGMENT = "map-fragment"
 
 
@@ -84,9 +82,7 @@ class MainActivity : AppCompatActivity() {
         permissions_check_and_init = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
             // Checks if the minimum required permissions are granted
             if (!Permissions.minimumRequired.all{ permission -> ContextCompat.checkSelfPermission(baseContext, permission) == PackageManager.PERMISSION_GRANTED }) {
-                val dialog = MissingMinimumPermissionsDialog()
-                to_dismiss_dialogs.add(dialog)
-                dialog.show(supportFragmentManager, MissingMinimumPermissionsDialog.TAG)
+                MissingMinimumPermissionsDialog().show(supportFragmentManager, MissingMinimumPermissionsDialog.TAG)
             }
             else if (!successful_init) {
                 init()
@@ -128,7 +124,12 @@ class MainActivity : AppCompatActivity() {
 
         try {
             view_model.stopPeriodicScan()
-            to_dismiss_dialogs.forEach { try { it.dismiss() } catch (err: Exception) { /* Empty */ } }
+            if (supportFragmentManager.findFragmentByTag(MeasureFilterDialog.TAG) != null) {
+                (supportFragmentManager.findFragmentByTag(MeasureFilterDialog.TAG) as MeasureFilterDialog).dismiss()
+            }
+            if (supportFragmentManager.findFragmentByTag(MissingMinimumPermissionsDialog.TAG) != null) {
+                (supportFragmentManager.findFragmentByTag(MissingMinimumPermissionsDialog.TAG) as MissingMinimumPermissionsDialog).dismiss()
+            }
             BackgroundScanService.start(this)
         }
         catch (err : Exception) {

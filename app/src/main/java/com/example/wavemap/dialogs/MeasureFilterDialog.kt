@@ -16,11 +16,16 @@ import androidx.fragment.app.DialogFragment
 import com.example.wavemap.R
 
 
-class MeasureFilterDialog(
-    private val items : ArrayList<CharSequence>,
-    private val onSelected : (index: Int) -> Unit
-) : DialogFragment() {
+class MeasureFilterDialog() : DialogFragment() {
+
     private var index_mapper : Map<Int, Int> = mutableMapOf() // Maps the index of the items of the ListView (potentially filtered) to the real indexes
+    private lateinit var items : ArrayList<CharSequence>
+    private lateinit var onSelected : (index: Int) -> Unit
+
+    constructor(items : ArrayList<CharSequence>, onSelected : (index: Int) -> Unit) :this() {
+        this.items = items
+        this.onSelected = onSelected
+    }
 
     companion object {
         const val TAG = "Measure-Filter-Dialog"
@@ -60,4 +65,5 @@ class MeasureFilterDialog(
             builder.create()
         } ?: throw IllegalStateException("Activity cannot be null")
     }
+
 }
