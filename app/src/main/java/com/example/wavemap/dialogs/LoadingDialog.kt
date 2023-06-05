@@ -13,9 +13,7 @@ import androidx.fragment.app.DialogFragment
 import com.example.wavemap.R
 
 
-class LoadingDialog(
-    private val onTryDismiss: () -> Unit
-) : DialogFragment() {
+class LoadingDialog() : DialogFragment() {
 
     companion object {
         const val TAG = "Loading-Dialog"
@@ -34,9 +32,6 @@ class LoadingDialog(
             dialog.setCancelable(false)
             dialog.window?.setBackgroundDrawable(ColorDrawable(Color.TRANSPARENT))
             dialog.setOnKeyListener { _, key_code, _ -> // Prevents dialog to close on back button
-                when (key_code) {
-                    KeyEvent.KEYCODE_BACK -> onTryDismiss()
-                }
                 true
             }
 

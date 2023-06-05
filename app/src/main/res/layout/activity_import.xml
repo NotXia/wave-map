@@ -13,6 +13,7 @@
 
 
     <TextView
+        android:id="@+id/import_title_textview"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
@@ -22,14 +23,14 @@
         android:layout_marginBottom="3dp"/>
 
     <TextView
-        android:id="@+id/date_textview"
+        android:id="@+id/import_date_textview"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"
         android:text="" />
 
     <TextView
-        android:id="@+id/size_textview"
+        android:id="@+id/import_size_textview"
         android:layout_width="match_parent"
         android:layout_height="wrap_content"
         android:gravity="center"

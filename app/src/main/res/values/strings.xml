@@ -110,4 +110,6 @@
 
     <string name="wave_map_export">Wave Map Export</string>
 
+    <string name="invalid_format">Invalid format</string>
+
 </resources>
