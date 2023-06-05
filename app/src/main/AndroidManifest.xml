@@ -39,7 +39,8 @@
         <activity
             android:name=".ui.share.ImportActivity"
             android:exported="true"
-            android:launchMode="singleTask" >
+            android:launchMode="singleTask"
+            android:screenOrientation="portrait" >
 
             <intent-filter android:icon="@mipmap/ic_launcher" android:label="@string/import_measures">
                 <action android:name="android.intent.action.VIEW" />
@@ -50,7 +51,8 @@
 
         <activity
             android:name=".ui.share.ShareActivity"
-            android:exported="false" />
+            android:exported="false"
+            android:screenOrientation="portrait" />
 
         <activity
             android:name=".ui.main.MainActivity"
