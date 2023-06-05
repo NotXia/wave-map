@@ -74,7 +74,7 @@ class MainActivity : AppCompatActivity() {
         fab_start_measure = findViewById(R.id.btn_scan)
         fab_query = findViewById(R.id.btn_query)
 
-        map_fragment = if (savedInstanceState != null) {
+        map_fragment = if (savedInstanceState != null && supportFragmentManager.getFragment(savedInstanceState, BUNDLE_MAP_FRAGMENT) != null) {
             supportFragmentManager.getFragment(savedInstanceState, BUNDLE_MAP_FRAGMENT) as WaveHeatMapFragment
         } else {
             WaveHeatMapFragment()
@@ -138,7 +138,9 @@ class MainActivity : AppCompatActivity() {
 
     override fun onSaveInstanceState(outState: Bundle) {
         super.onSaveInstanceState(outState)
-        supportFragmentManager.putFragment(outState, BUNDLE_MAP_FRAGMENT, map_fragment)
+        if (successful_init) {
+            supportFragmentManager.putFragment(outState, BUNDLE_MAP_FRAGMENT, map_fragment)
+        }
     }
 
     override fun onCreateOptionsMenu(menu: Menu): Boolean {
