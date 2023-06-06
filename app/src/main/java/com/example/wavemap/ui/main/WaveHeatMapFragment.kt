@@ -54,9 +54,9 @@ class WaveHeatMapFragment : Fragment() {
     private lateinit var center : LatLng
     private lateinit var top_left_center : LatLng
 
-    private var markers : MutableList<Marker> = mutableListOf() // Markers containing tile labels
+    private var map_update_job : Job? = null
 
-    private val map_mutex = Mutex()
+    private var markers : MutableList<Marker> = mutableListOf() // Markers containing tile labels
 
     val current_tile: MutableLiveData<LatLng> by lazy {
         MutableLiveData<LatLng>()
@@ -76,11 +76,10 @@ class WaveHeatMapFragment : Fragment() {
     fun refreshMap() {
         if (!is_initialized) { return }
 
-        lifecycleScope.launch(Dispatchers.IO) {
-            map_mutex.withLock {
-                withContext(Dispatchers.Main) { google_map.clear() }
-                fillScreenWithTiles()
-            }
+        map_update_job?.cancel()
+        map_update_job = lifecycleScope.launch(Dispatchers.IO) {
+            withContext(Dispatchers.Main) { google_map.clear() }
+            fillScreenWithTiles()
         }
     }
 
