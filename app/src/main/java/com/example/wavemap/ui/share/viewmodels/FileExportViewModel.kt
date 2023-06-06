@@ -9,6 +9,7 @@ import androidx.room.Room
 import com.example.wavemap.db.ShareMeasures
 import com.example.wavemap.db.WaveDatabase
 import com.example.wavemap.utilities.Constants
+import com.example.wavemap.utilities.Event
 import kotlinx.coroutines.Dispatchers
 import kotlinx.coroutines.Job
 import kotlinx.coroutines.launch
@@ -17,7 +18,7 @@ import java.io.*
 class FileExportViewModel(private val application : Application) : AndroidViewModel(application) {
 
     val export_success = MutableLiveData<Boolean>()
-    val download_success = MutableLiveData<Boolean>()
+    val download_success = MutableLiveData<Event<Boolean>>()
     lateinit var export_path : File
 
     private val db = Room.databaseBuilder(application.applicationContext, WaveDatabase::class.java, Constants.DATABASE_NAME).build()
@@ -60,9 +61,9 @@ class FileExportViewModel(private val application : Application) : AndroidViewMo
 
                 fin.close()
                 fout.close()
-                download_success.postValue(true)
+                download_success.postValue(Event(true))
             } catch (err: Exception) {
-                download_success.postValue(false)
+                download_success.postValue(Event(false))
             }
         }
     }

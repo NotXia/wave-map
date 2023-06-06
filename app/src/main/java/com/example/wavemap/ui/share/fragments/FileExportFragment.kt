@@ -47,21 +47,13 @@ class FileExportFragment : Fragment() {
         }
 
         view_model.export_success.observe(viewLifecycleOwner) { export_success ->
-            loading_dialog.dismiss()
+            if (childFragmentManager.findFragmentByTag(LoadingDialog.TAG) != null) {
+                loading_dialog.dismiss()
+            }
 
             if (!export_success) {
                 Toast.makeText(requireContext(), getString(R.string.error_occurred), Toast.LENGTH_SHORT).show()
             } else {
-                view_model.download_success.observe(viewLifecycleOwner) { download_success ->
-                    loading_dialog.dismiss()
-
-                    if (download_success) {
-                        sendDownloadNotification()
-                    } else {
-                        Toast.makeText(requireContext(), getString(R.string.error_occurred), Toast.LENGTH_SHORT).show()
-                    }
-                }
-
                 ShareExportDialog(
                     onSave = {
                         loading_dialog.show(childFragmentManager, LoadingDialog.TAG)
@@ -71,6 +63,21 @@ class FileExportFragment : Fragment() {
                         share(view_model.export_path)
                     }
                 ).show(childFragmentManager, ShareExportDialog.TAG)
+            }
+        }
+
+        view_model.download_success.observe(viewLifecycleOwner) { event ->
+            val download_success = event.get()
+                ?: return@observe
+
+            if (childFragmentManager.findFragmentByTag(LoadingDialog.TAG) != null) {
+                loading_dialog.dismiss()
+            }
+
+            if (download_success) {
+                sendDownloadNotification()
+            } else {
+                Toast.makeText(requireContext(), getString(R.string.error_occurred), Toast.LENGTH_SHORT).show()
             }
         }
 
