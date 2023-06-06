@@ -1,10 +1,11 @@
-package com.example.wavemap.dialogs
+package com.example.wavemap.dialogs.settings
 
 import com.example.wavemap.R
+import com.example.wavemap.dialogs.PromptDialog
 import com.example.wavemap.utilities.Permissions
 import kotlin.system.exitProcess
 
-class MissingMinimumPermissionsDialog() : PromptDialog(
+class MissingMinimumPermissionsDialog : PromptDialog(
     R.string.missing_minimum_permissions,
     R.string.missing_minimum_permissions_desc,
     R.string.settings,
@@ -21,7 +22,6 @@ class MissingMinimumPermissionsDialog() : PromptDialog(
 
     override fun onNegative() {
         exitProcess(0)
-
     }
 
 }

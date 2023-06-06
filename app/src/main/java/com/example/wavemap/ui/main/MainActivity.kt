@@ -1,7 +1,6 @@
 package com.example.wavemap.ui.main
 
 import android.content.Intent
-import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.content.res.ColorStateList
 import android.graphics.Color
@@ -23,9 +22,9 @@ import androidx.core.content.ContextCompat
 import androidx.fragment.app.DialogFragment
 import androidx.fragment.app.commit
 import androidx.lifecycle.lifecycleScope
-import androidx.preference.PreferenceManager
 import com.example.wavemap.R
 import com.example.wavemap.dialogs.*
+import com.example.wavemap.dialogs.settings.*
 import com.example.wavemap.measures.WaveSampler
 import com.example.wavemap.measures.samplers.BluetoothSampler
 import com.example.wavemap.measures.samplers.LTESampler
@@ -92,7 +91,7 @@ class MainActivity : AppCompatActivity() {
         permissions_check_and_measure_current = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) { is_granted: Map<String, Boolean> ->
             if (!is_granted.values.all{ granted -> granted }) {
                 val dialog = getSamplerPermissionsHandler(view_model.curr_sampler.view_model.sampler).permissions_dialog
-                dialog.show(supportFragmentManager, OpenSettingsDialog.TAG)
+                dialog.show(supportFragmentManager, OpenAppSettingsDialog.TAG)
             }
             else {
                 view_model.userTriggeredMeasure(view_model.curr_sampler)
@@ -257,14 +256,13 @@ class MainActivity : AppCompatActivity() {
     private fun getSamplerPermissionsHandler(sampler_viewmodel: WaveSampler) : SamplerPermissionsHandler {
         return when (sampler_viewmodel) {
             is WiFiSampler -> SamplerPermissionsHandler(
-                Permissions.wifi, OpenSettingsDialog.Companion.App(R.string.missing_wifi_permission, R.string.missing_wifi_permission_desc)) {
-                    if (WiFiSampler.isWiFiEnabled(baseContext)) null else OpenSettingsDialog.Companion.WiFi(R.string.wifi_not_enabled, null)
+                Permissions.wifi, MissingWiFiPermissionsDialog()) {
+                    if (WiFiSampler.isWiFiEnabled(baseContext)) null else WiFiNotEnabledDialog()
                 }
-            is LTESampler -> SamplerPermissionsHandler(Permissions.lte, OpenSettingsDialog.Companion.App(R.string.missing_lte_permission, R.string.missing_lte_permission_desc)) { null }
-            is NoiseSampler -> SamplerPermissionsHandler(Permissions.lte, OpenSettingsDialog.Companion.App(R.string.missing_noise_permission, R.string.missing_noise_permission_desc)) { null }
-            is BluetoothSampler -> SamplerPermissionsHandler(
-                Permissions.bluetooth, OpenSettingsDialog.Companion.App(R.string.missing_bluetooth_permission, R.string.missing_bluetooth_permission_desc)) {
-                    if (BluetoothSampler.isBluetoothEnabled(baseContext)) null else OpenSettingsDialog.Companion.Bluetooth(R.string.bluetooth_not_enabled, null)
+            is LTESampler -> SamplerPermissionsHandler(Permissions.lte, MissingLTEPermissionsDialog()) { null }
+            is NoiseSampler -> SamplerPermissionsHandler(Permissions.noise, MissingNoisePermissionsDialog()) { null }
+            is BluetoothSampler -> SamplerPermissionsHandler(Permissions.bluetooth, MissingBluetoothPermissionsDialog()) {
+                    if (BluetoothSampler.isBluetoothEnabled(baseContext)) null else BluetoothNotEnabledDialog()
                 }
             else -> throw RuntimeException("Unknown sampler")
         }
@@ -277,7 +275,7 @@ class MainActivity : AppCompatActivity() {
         if (to_show_dialog == null) {
             permissions_check_and_measure_current.launch(sampler_permissions.permissions)
         } else {
-            to_show_dialog.show(supportFragmentManager, OpenSettingsDialog.TAG)
+            to_show_dialog.show(supportFragmentManager, OpenAppSettingsDialog.TAG)
         }
     }
 

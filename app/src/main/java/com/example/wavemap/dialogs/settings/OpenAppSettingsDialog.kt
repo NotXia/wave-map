@@ -1,9 +1,10 @@
-package com.example.wavemap.dialogs
+package com.example.wavemap.dialogs.settings
 
 import com.example.wavemap.R
+import com.example.wavemap.dialogs.PromptDialog
 import com.example.wavemap.utilities.Permissions
 
-abstract class OpenSettingsDialog(
+abstract class OpenAppSettingsDialog(
     title_id: Int,
     message_id: Int?
 ) : PromptDialog(
@@ -16,20 +17,18 @@ abstract class OpenSettingsDialog(
     companion object {
         const val TAG = "Open-Settings-Dialog"
 
-        class App(title_id: Int, message_id: Int?) : OpenSettingsDialog(title_id, message_id) {
-            override fun openSettings() { Permissions.openAppSettings(requireContext()) }
-        }
-
-        class WiFi(title_id: Int, message_id: Int?) : OpenSettingsDialog(title_id, message_id) {
+        class WiFi(title_id: Int, message_id: Int?) : OpenAppSettingsDialog(title_id, message_id) {
             override fun openSettings() { Permissions.openWiFiSettings(requireContext()) }
         }
 
-        class Bluetooth(title_id: Int, message_id: Int?) : OpenSettingsDialog(title_id, message_id) {
+        class Bluetooth(title_id: Int, message_id: Int?) : OpenAppSettingsDialog(title_id, message_id) {
             override fun openSettings() { Permissions.openBluetoothSettings(requireContext()) }
         }
     }
 
-    abstract fun openSettings()
+    open fun openSettings() {
+        Permissions.openAppSettings(requireContext())
+    }
 
     override fun onPositive() {
         openSettings()
