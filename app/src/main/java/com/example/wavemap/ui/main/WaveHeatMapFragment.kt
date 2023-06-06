@@ -44,15 +44,17 @@ import kotlin.math.*
 
 class WaveHeatMapFragment : Fragment() {
 
-    private lateinit var google_map : GoogleMap
     private lateinit var pref_manager : SharedPreferences
     lateinit var view_model : MeasureViewModel
     private val is_initialized : Boolean
         get() = this::google_map.isInitialized && this::center.isInitialized && this::top_left_center.isInitialized && this::view_model.isInitialized
 
+    private lateinit var google_map : GoogleMap
     private var tile_length_meters = 500.0
     private lateinit var center : LatLng
     private lateinit var top_left_center : LatLng
+    private var current_zoom : Float = 18f
+    private var drawn_tiles = mutableSetOf<LatLng>()
 
     private var map_update_job : Job? = null
 
@@ -73,16 +75,17 @@ class WaveHeatMapFragment : Fragment() {
         refreshMap()
     }
 
-    fun refreshMap() {
+    fun refreshMap(need_clear: Boolean=true) {
         if (!is_initialized) { return }
 
         map_update_job?.cancel()
         map_update_job = lifecycleScope.launch(Dispatchers.IO) {
-            withContext(Dispatchers.Main) { google_map.clear() }
+            if (need_clear) {
+                withContext(Dispatchers.Main) { clearMap() }
+            }
             fillScreenWithTiles()
         }
     }
-
 
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?) : View? {
@@ -102,11 +105,11 @@ class WaveHeatMapFragment : Fragment() {
                 lifecycleScope.launch {
                     if (savedInstanceState != null) {
                         val restored_center = LatLng(savedInstanceState.getDouble(BUNDLE_CAMERA_LAT), savedInstanceState.getDouble(BUNDLE_CAMERA_LON))
-                        val restored_zoom = savedInstanceState.getFloat(BUNDLE_CAMERA_ZOOM)
-                        initMap(restored_center, restored_zoom)
+                        current_zoom = savedInstanceState.getFloat(BUNDLE_CAMERA_ZOOM)
+                        initMap(restored_center, current_zoom)
                     }
                     else {
-                        initMap()
+                        initMap(null, current_zoom)
                     }
                 }
             }
@@ -153,9 +156,14 @@ class WaveHeatMapFragment : Fragment() {
             }
 
             google_map.setOnCameraIdleListener {
-                updateTilesLength()
+                if (google_map.cameraPosition.zoom != current_zoom) {
+                    current_zoom = google_map.cameraPosition.zoom
+                    clearMap()
+                    updateTilesLength()
+                }
+
                 lifecycleScope.launch {
-                    refreshMap()
+                    refreshMap(false)
                 }
             }
         }
@@ -216,7 +224,13 @@ class WaveHeatMapFragment : Fragment() {
      * Drawing
      * */
 
+    private fun clearMap() {
+        drawn_tiles = mutableSetOf()
+        google_map.clear()
+    }
+
     private suspend fun drawTile(top_left_corner: LatLng) {
+        if (drawn_tiles.find{ abs(it.latitude-top_left_corner.latitude) < 1e-8 && abs(it.longitude-top_left_corner.longitude) < 1e-8 } != null) { return }
         if (view_model.values_scale == null) { return }
 
         val top_right_corner = LatLng(top_left_corner.latitude, top_left_corner.longitude+metersToLongitudeOffset(tile_length_meters, top_left_corner.latitude))
@@ -233,14 +247,15 @@ class WaveHeatMapFragment : Fragment() {
         }
 
         withContext(Dispatchers.Main) {
-            google_map.addPolygon(
+           google_map.addPolygon(
                 PolygonOptions()
                     .clickable(false)
                     .fillColor(color)
-                    .strokeWidth(1.2f)
+                    .strokeWidth(1.5f)
                     .strokeColor(Color.argb(50, 0, 0, 0))
                     .add(top_left_corner, top_right_corner, bottom_right_corner, bottom_left_corner)
             )
+            drawn_tiles.add(top_left_corner)
 
             // Adds a label with the value to the tile
             if (tile_average != null && pref_manager.getBoolean("show_tile_label", true)) {

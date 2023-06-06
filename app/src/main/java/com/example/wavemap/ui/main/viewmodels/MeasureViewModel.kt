@@ -23,6 +23,9 @@ abstract class MeasureViewModel(application : Application) : AndroidViewModel(ap
     }
 
     suspend fun averageOf(top_left_corner: LatLng, bottom_right_corner: LatLng) : Double? {
+        // The tile has no measurements
+        if (sampler.retrieve(top_left_corner, bottom_right_corner, limit, get_shared).isEmpty()) { return null }
+
         // The average of a tile is obtained as the average of its sub-tiles
         val latitude_step = (top_left_corner.latitude - bottom_right_corner.latitude) / Constants.TILE_AVERAGE_STEPS
         val longitude_step = (bottom_right_corner.longitude - top_left_corner.longitude) / Constants.TILE_AVERAGE_STEPS
