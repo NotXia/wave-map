@@ -75,7 +75,9 @@ class FileExportViewModel(private val application : Application) : AndroidViewMo
 
     override fun onCleared() {
         super.onCleared()
-        export_path.delete()
+        try {
+            export_path.delete()
+        } catch (err: Exception) { /* The file may not have been created */ }
     }
 
 }
