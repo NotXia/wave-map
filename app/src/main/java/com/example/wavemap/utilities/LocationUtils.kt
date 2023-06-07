@@ -32,14 +32,17 @@ class LocationUtils {
             .addOnCanceledListener { cont.resumeWithException( RuntimeException("Cannot retrieve location") ) }
         }
 
+
+        // Source: https://gis.stackexchange.com/questions/2951/algorithm-for-offsetting-a-latitude-longitude-by-some-amount-of-meters
+
         fun metersToLatitudeOffset(meters: Double) : Double {
-            val degrees_per_1_meter = 1.0/111320.0
+            val degrees_per_1_meter = 1.0/111111.0
             return meters * degrees_per_1_meter
         }
 
         fun metersToLongitudeOffset(meters: Double, latitude: Double) : Double {
-            // val degrees_per_1_meter = 1.0/(40075000.0 * cos(latitude) / 360)
-            val degrees_per_1_meter = 1.0/(40075000.0 * cos(0.0) / 360)
+            // val degrees_per_1_meter = 1.0/(111111.0 * cos(latitude))
+            val degrees_per_1_meter = 1.0/(111111.0 * cos(0.0))
             return meters * degrees_per_1_meter
         }
 
