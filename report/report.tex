@@ -3,6 +3,9 @@
 \usepackage{algorithm2e}
 \usepackage[italian]{babel}
 \usepackage[hidelinks]{hyperref}
+\usepackage{amsmath}
+\usepackage{graphicx}
+\usepackage[nameinlink]{cleveref}
 
 \tolerance=1
 \emergencystretch=\maxdimen
@@ -64,8 +67,49 @@
 
 
 \subsection{Mappa}
+Per la mappa è stato utilizzato \textit{Google Maps} e l'implementazione è contenuta nel fragment \texttt{WaveHeatMapFragment}.
 
+\subsubsection{Generazione cella}
+Una cella della mappa rappresenta la misurazione di un'area quadrata\footnote{Esclusa la zona equatoriale, le celle appariranno rettangolari} e la dimensione di quest'ultima scala automaticamente in base al livello dello zoom.
 
+Una cella è descritta dalle coordinate del vertice superiore sinistro (nord-ovest) e a partire da questa vengono calcolate le coordinate degli altri convertendo la dimensione della cella (in metri) in un offset da applicare a latitudine e longitudine.
+
+Per questioni estetiche, gli offset applicati alle coordinate sono approssimati in modo tale che tutte le righe siano allineate verticalmente (vedi \cref{fig:tile_offset}).
+\begin{figure}[h]
+    \centering
+    \begin{minipage}[b]{0.45\textwidth}
+      \includegraphics[width=\textwidth]{./img/tile_no_approx.jpg}
+    \end{minipage}
+    \hfill
+    \begin{minipage}[b]{0.45\textwidth}
+      \includegraphics[width=\textwidth]{./img/tile_approx.jpg}
+    \end{minipage}
+    \caption{Offset calcolati in maniera più precisa (sinistra) e offset calcolati in modo approssimato (destra)} \label{fig:tile_offset}
+\end{figure}
+
+\subsubsection{Generazione griglia}
+La griglia è composta da celle generate relativamente ad una posizione di riferimento. In particolare, in fase di inizializzazione viene designata come cella di riferimento quella che pone la posizione dell'utente al centro e in base a questa è possibile determinare la posizione di tutte le altre celle della mappa. 
+
+Nello specifico, date delle coordinate $(\texttt{pos}_{\texttt{lat}}, \texttt{pos}_{\texttt{lon}})$, per determinare la cella che la contiene si calcola il numero di celle da saltare rispetto a quella di riferimento: 
+\begin{equation*}
+    \texttt{to\_skip\_tiles}_\texttt{lat} =
+        \lceil \frac{\texttt{pos}_{\texttt{lat}} - \texttt{center\_top\_left}_{\texttt{lat}}}{\texttt{latitudeOffset(tile\_length\_meters)}} \rceil
+\end{equation*}
+\begin{equation*}
+    \texttt{to\_skip\_tiles}_\texttt{lon} =
+        \lfloor \frac{\texttt{pos}_{\texttt{lon}} - \texttt{center\_top\_left}_{\texttt{lon}}}{\texttt{longitudeOffset(tile\_length\_meters)}} \rfloor
+\end{equation*}
+Le coordinate del vertice superiore sinistro sono quindi:
+\begin{equation*}
+    \texttt{tile}_\texttt{lat} = \texttt{center\_top\_left}_{\texttt{lat}} + (\texttt{to\_skip\_tiles}_\texttt{lat} \cdot \texttt{latitudeOffset(tile\_length\_meters)})
+\end{equation*}
+\begin{equation*}
+    \texttt{tile}_\texttt{lon} = \texttt{center\_top\_left}_{\texttt{lon}} + (\texttt{to\_skip\_tiles}_\texttt{lon} \cdot \texttt{longitudeOffset(tile\_length\_meters)})
+\end{equation*}
+
+Con questo approccio, ogni volta che viene spostata la visuale della mappa, la griglia viene generata iterando a partire dalle coordinate dell'angolo nord-ovest visibile dello schermo, fino a raggiungere l'angolo sud-est. 
+
+In aggiunta, per maggiore efficienza, si tiene traccia delle celle generate in modo da evitare di ridisegnare una cella già presente. Questo meccanismo viene resettato quando viene cambiato il livello di zoom, in quanto tutte le celle già presenti diventano obsolete e vengono cancellate.
 
 \subsection{Raccolta dei dati}
 
