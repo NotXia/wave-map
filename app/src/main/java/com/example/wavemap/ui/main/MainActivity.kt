@@ -222,6 +222,7 @@ class MainActivity : AppCompatActivity() {
             if (error == null) { return@observe }
             Log.e("measure", "User triggered measure: $error")
             Toast.makeText(baseContext, getString(R.string.error_occurred), Toast.LENGTH_SHORT).show()
+            enableMeasureFab()
         }
     }
 
