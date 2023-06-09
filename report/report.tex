@@ -212,6 +212,9 @@ In aggiunta, è presente un campo per informazioni aggiuntive utile per distingu
 
 L'interfaccia \texttt{WaveMeasure} viene quindi utilizzata per implementare la classe \texttt{MeasureTable} che descrive la tabella del database dedicata per memorizzare le misurazioni. 
 Tutte le misurazioni sono salvate nella stessa tabella e sono differenziate da un campo (\texttt{type}) aggiunto in fase di salvataggio nel database.
+Inoltre, ciascuna misura è identificata univocamente da un UUID, utile anche per differenziare le misurazioni provenienti da altri utenti.
+
+In aggiunta, una seconda tabella descritta da \texttt{BSSIDTable} contiene la mappatura da BSSID a SSID.
 
 
 \subsubsection{Sampler}
@@ -241,16 +244,49 @@ A partire da \texttt{WaveSampler} sono quindi implementati i \textit{sampler} pe
       \item Misura la potenza dei dispositivi accoppiati mediante il \texttt{BluetoothManager}.
       \item Misura la potenza dei dispositivi circostanti registrando un \texttt{BroadcastReceiver} con filtro \texttt{BluetoothDevice.ACTION\_FOUND} e richiedendo al \texttt{BluetoothManager} una scansione completa.
     \end{itemize}
-  \item LTE (\texttt{LTESampler}): ottiene la potenza del segnale LTE tramite il \texttt{TelephonyManager}
+  \item LTE (\texttt{LTESampler}): ottiene la potenza del segnale LTE tramite il \texttt{TelephonyManager}.
   \item Suono (\texttt{NoiseSampler}): viene fatta la media di una serie di campionature effettuate utilizzando un \texttt{MediaRecorder}.
 \end{itemize}
 
 
 
 \subsection{Servizi in background}
+La classe \texttt{BackgroundScanService} estende \texttt{Service} e implementa le funzionalità dell'applicazione attive in background.
+
+In fase di avvio del servizio, viene inizializzato un \texttt{FusedLocationProviderClient} impostato per fornire periodicamente la posizione del dispositivo. In particolare, gli aggiornamenti vengono notificati dopo che è stata percorsa una distanza minima dalla posizione precedente e hanno una priorità impostata a \texttt{PRIORITY\_BALANCED\_POWER\_ACCURACY} per preservare la batteria del dispositivo.
+
+Le operazioni effettuate alla ricezione di un aggiornamento della posizione sono:
+\begin{enumerate}
+  \item Verifica se l'area è coperta da misurazioni, in caso negativo viene inviata una notifica.
+        Per evitare di inviare notifiche troppo frequentemente, viene tenuto traccia del momento in cui è stata inviata quella più recente in modo tale da poter ignorare le notifiche successive se dovessero essere create a distanza troppo ravvicinata.
+  \item Effettua una misurazione completa utilizzando tutti i \textit{sampler}.
+\end{enumerate}
+
 
 
 \subsection{Condivisione dati}
+
+Le operazioni per l'esportazione e l'importazione dei dati sono implementate come metodi statici della classe \texttt{ShareMeasures}.
+
+La condivisione dei dati avviene tramite la creazione di un file contenente le misurazioni.
+Per maggiore interoperabilità con eventuali estensioni, i dati vengono salvati in formato JSON e per tale scopo viene utilizzata la libreria \texttt{Gson}.
+
+\subsubsection{Esportazione}
+L'esportazione è gestita dal fragment \texttt{FileExportFragment} e ViewModel \texttt{FileExportViewModel}.
+
+Durante la fase di esportazione, tutte le misurazioni e tutti i BSSID salvati nel database vengono convertiti in una stringa JSON, assieme ad alcuni metadati. Il risultato è quindi temporaneamente salvato nella cache dell'applicazione.
+
+L'utente ha quindi la possibilità di salvare il risultato in un file locale nella cartella \textit{Downloads} oppure di condividerlo attraverso un \texttt{Intent} di tipo \texttt{ACTION\_SEND}.
+
+
+\subsubsection{Importazione}
+L'importazione è gestita dall'activity \texttt{ImportActivity} e ViewModel \texttt{ImportViewModel}.
+
+\texttt{ImportActivity} ha come \texttt{intent-filter} azioni del tipo \texttt{VIEW} e \texttt{SEND}, e quindi permette di selezionare l'azione di importazione quando l'utente apre o condivide un file.
+
+Una volta aperto e validato un file di misurazioni, l'importazione consiste nell'inserire nel database tutte le misurazioni presenti marcandole come misure ottenute per condivisione. Per evitare duplicati, l'UUID viene usato come discriminante e vengono quindi ignorate tutte le misurazioni già presenti.
+
+Analogamente, la tabella dei BSSID viene importata escludendo le righe già note.
 
 
 \subsection{Componenti}
@@ -263,7 +299,10 @@ A partire da \texttt{WaveSampler} sono quindi implementati i \textit{sampler} pe
 \section{Problemi noti}
 
 \subsection{Scansione Wi-Fi}
+
 \subsection{Servizio in background}
+
+\subsection{Importazione}
 
 
 \end{document}
