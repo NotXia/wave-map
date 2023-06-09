@@ -12,6 +12,7 @@
 \usepackage[ruled, vlined, linesnumbered]{algorithm2e}
 \SetAlgorithmName{Algoritmo}{Algoritmo}{Elenco degli algoritmi}
 \crefname{algocf}{Algoritmo}{Algoritmo}
+\usepackage{array}
 
 \tolerance=1
 \emergencystretch=\maxdimen
@@ -134,10 +135,31 @@ Di seguito sono elencate le feature implementate:
 
 \subsection{Informazioni generali}
 Il progetto è stato sviluppato come applicazione nativa utilizzando Kotlin. 
-Come pattern architetturale è stato scelto l'approccio Model-View-ViewModel, mentre per l'interfacciamento con il database locale è stata utilizzata la libreria \textit{Room}.
+Come pattern architetturale è stato scelto l'approccio Model-View-ViewModel, mentre per l'interfacciamento con il database locale è stata utilizzata la libreria \texttt{Room}.
 
-Le operazioni asincrone sono state principalmente implementate tramite le \texttt{coroutine}.
-Inoltre, per favorire un codice più "lineare", quando possibile, sono state trasformate le funzioni con callback in funzioni \texttt{suspend} utilizzando come wrapper \texttt{suspendCoroutine}.
+Le operazioni asincrone sono state principalmente implementate tramite le \texttt{coroutine} e per favorire un codice più "lineare", quando possibile, sono state trasformate le funzioni con callback in funzioni \texttt{suspend} utilizzando come wrapper \texttt{suspendCoroutine}.
+
+\subsubsection{Organizzazione package}
+In \cref{table:packages} è descritta l'organizzazione dei package:
+\begin{table}[H]
+  \centering
+  \begin{tabular}{ | m{8em} | m{10cm} | } 
+    \hline
+    \texttt{db} & Classi che implementano la struttura e le operazioni sulle tabelle del database. \\ 
+    \hline
+    \texttt{dialogs} & Classi per istanziare i dialog utilizzati nell'applicazione. \\ 
+    \hline
+    \texttt{measures} & Classi che implementano le operazioni per effettuare le misurazioni. \\ 
+    \hline
+    \texttt{services} & Classi che implementano i servizi in background. \\ 
+    \hline
+    \texttt{ui} & \texttt{Activity}, \texttt{Fragment} e \texttt{ViewModel} dell'applicazione. \\ 
+    \hline
+    \texttt{utilities} & Metodi e variabili di utilità generale. \\ 
+    \hline
+  \end{tabular}
+  \caption{Organizzazione package}\label{table:packages}
+\end{table}
 
 
 \subsection{Mappa}
@@ -148,7 +170,7 @@ Una cella della mappa rappresenta la misurazione di un'area quadrata\footnote{Es
 
 Una cella è descritta dalle coordinate del vertice superiore sinistro (nord-ovest) e a partire da questa vengono calcolate le coordinate degli altri convertendo la dimensione della cella (in metri) in un offset da applicare a latitudine e longitudine.
 Per questioni estetiche, gli offset sono approssimati in modo tale che tutte le righe siano allineate verticalmente (\cref{fig:tile_offset}).
-\begin{figure}[h]
+\begin{figure}[H]
     \centering
     \begin{minipage}[b]{0.45\textwidth}
       \includegraphics[width=\textwidth]{./img/tile_no_approx.jpg}
