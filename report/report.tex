@@ -133,7 +133,11 @@ Di seguito sono elencate le feature implementate:
 \section{Scelte progettuali}
 
 \subsection{Informazioni generali}
+Il progetto è stato sviluppato come applicazione nativa utilizzando Kotlin. 
+Come pattern architetturale è stato scelto l'approccio Model-View-ViewModel, mentre per l'interfacciamento con il database locale è stata utilizzata la libreria \textit{Room}.
 
+Le operazioni asincrone sono state principalmente implementate tramite le \texttt{coroutine}.
+Inoltre, per favorire un codice più "lineare", quando possibile, sono state trasformate le funzioni con callback in funzioni \texttt{suspend} utilizzando come wrapper \texttt{suspendCoroutine}.
 
 
 \subsection{Mappa}
@@ -207,25 +211,40 @@ Una misurazione è descritta dall'interfaccia \texttt{WaveMeasure} e contiene il
 In aggiunta, è presente un campo per informazioni aggiuntive utile per distinguere alcune tipologie di misurazioni (es. per Wi-Fi e Bluetooth viene salvato il BSSID).
 
 L'interfaccia \texttt{WaveMeasure} viene quindi utilizzata per implementare la classe \texttt{MeasureTable} che descrive la tabella del database dedicata per memorizzare le misurazioni. 
-Tutte le misurazioni sono salvate nella stessa tabella e sono differenziate da un campo \texttt{type}.
+Tutte le misurazioni sono salvate nella stessa tabella e sono differenziate da un campo (\texttt{type}) aggiunto in fase di salvataggio nel database.
 
 
 \subsubsection{Sampler}
-Per la raccolta dei dati è stato introdotto il concetto di \textit{sampler} per gestisce in maniera modulare le misurazioni.
+Per la raccolta dei dati è stato introdotto il concetto di \textit{sampler} per gestire in maniera modulare le misurazioni.
 Nello specifico, un \textit{sampler} è descritto dalla classe astratta \texttt{WaveSampler} e richiede l'implementazione dei seguenti metodi:
 \begin{itemize}
-    \item \texttt{sample} per prendere una nuova misurazione
-    \item \texttt{store} per il salvataggio dei dati nel database
-    \item \texttt{retrieve} per la ricerca dei dati note le coordinate dei vertici di una cella della mappa
+    \item \texttt{sample} per prendere una nuova misurazione.
+    \item \texttt{store} per il salvataggio dei dati nel database.
+    \item \texttt{retrieve} per la ricerca dei dati note le coordinate dei vertici di una cella della mappa.
 \end{itemize}
 Inoltre, sono esposte le seguenti funzioni ausiliarie:
 \begin{itemize}
-    \item \texttt{average} richiama \texttt{retrieve} e restituisce la media dei valori
-    \item \texttt{sampleAndStore} richiama in sequenza \texttt{sample} e \texttt{store}
+    \item \texttt{average} richiama \texttt{retrieve} e restituisce la media dei valori.
+    \item \texttt{sampleAndStore} richiama in sequenza \texttt{sample} e \texttt{store}.
 \end{itemize}
 Per maggiore flessibilità, le misure vengono sempre intese come liste di \texttt{WaveMeasure}. Ciò permette di gestire misurazioni che per loro natura non generano un'unica misurazione (es. Wi-Fi e Bluetooth).
 
-A partire da \texttt{WaveSampler} sono quindi implementati i \textit{sampler} per Wi-Fi, Bluetooth, LTE e suono.
+A partire da \texttt{WaveSampler} sono quindi implementati i \textit{sampler} per:
+\begin{itemize}
+  \item Wi-Fi (\texttt{WiFiSampler}): 
+    \begin{itemize}[topsep=0em]
+      \item Ottiene la potenza della rete al quale il dispositivo è attualmente connesso tramite il servizio di sistema \texttt{ConnectivityManager}. Per versioni inferiori alla API 29, viene invece utilizzato il \texttt{WifiManager}.
+      \item Misura la potenza delle reti circostanti registrando un \texttt{BroadcastReceiver} con filtro \texttt{WifiManager.SCAN\_RESULTS\_AVAILABLE\_ACTION} e richiedendo una scansione completa attraverso il \texttt{WifiManager}.
+    \end{itemize}
+  \item Bluetooth (\texttt{BluetoothSampler}):
+    \begin{itemize}[topsep=0em]
+      \item Misura la potenza dei dispositivi accoppiati mediante il \texttt{BluetoothManager}.
+      \item Misura la potenza dei dispositivi circostanti registrando un \texttt{BroadcastReceiver} con filtro \texttt{BluetoothDevice.ACTION\_FOUND} e richiedendo al \texttt{BluetoothManager} una scansione completa.
+    \end{itemize}
+  \item LTE (\texttt{LTESampler}): ottiene la potenza del segnale LTE tramite il \texttt{TelephonyManager}
+  \item Suono (\texttt{NoiseSampler}): viene fatta la media di una serie di campionature effettuate utilizzando un \texttt{MediaRecorder}.
+\end{itemize}
+
 
 
 \subsection{Servizi in background}
@@ -234,6 +253,17 @@ A partire da \texttt{WaveSampler} sono quindi implementati i \textit{sampler} pe
 \subsection{Condivisione dati}
 
 
-\section{Criticità e problemi noti}
+\subsection{Componenti}
+\subsubsection{App principale}
+\subsubsection{Impostazioni}
+\subsubsection{Condivisione}
+
+
+
+\section{Problemi noti}
+
+\subsection{Scansione Wi-Fi}
+\subsection{Servizio in background}
+
 
 \end{document}
