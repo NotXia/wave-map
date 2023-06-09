@@ -5,7 +5,7 @@
 \usepackage[hidelinks]{hyperref}
 \usepackage{amsmath}
 \usepackage{graphicx}
-\usepackage[nameinlink]{cleveref}
+\usepackage[nameinlink, noabbrev, italian]{cleveref}
 
 \tolerance=1
 \emergencystretch=\maxdimen
@@ -88,7 +88,7 @@ Per questioni estetiche, gli offset applicati alle coordinate sono approssimati 
     \begin{minipage}[b]{0.45\textwidth}
       \includegraphics[width=\textwidth]{./img/tile_approx.jpg}
     \end{minipage}
-    \caption{Offset calcolati in maniera più precisa (sinistra) e offset calcolati in modo approssimato (destra)} \label{fig:tile_offset}
+    \caption{Offset calcolati in maniera precisa (sinistra) e approssimato (destra)} \label{fig:tile_offset}
 \end{figure}
 
 \subsubsection{Generazione griglia}
@@ -118,7 +118,7 @@ In aggiunta, per maggiore efficienza, si tiene traccia delle celle generate in m
 \subsection{Raccolta dei dati}
 
 \subsubsection{Struttura e memorizzazione delle misurazioni}
-Una misurazione è descritta dall'interfaccia \texttt{WaveMeasure} e contiene il valore della misurazione, un timestamp e la posizione. 
+Una misurazione è descritta dall'interfaccia \texttt{WaveMeasure} e contiene il valore della misurazione, un timestamp, la posizione e un flag per indicare se si tratta di una misurazione propria o ottenuta tramite condivisione. 
 In aggiunta, è presente un campo per informazioni aggiuntive utile per distinguere alcune tipologie di misurazioni (es. per Wi-Fi e Bluetooth viene salvato il BSSID).
 
 L'interfaccia \texttt{WaveMeasure} viene quindi utilizzata per implementare la classe \texttt{MeasureTable} che descrive la tabella del database dedicata per memorizzare le misurazioni. 
