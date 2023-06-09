@@ -5,7 +5,10 @@
 \usepackage[hidelinks]{hyperref}
 \usepackage{amsmath}
 \usepackage{graphicx}
-\usepackage[nameinlink, noabbrev, italian]{cleveref}
+\usepackage[nameinlink, noabbrev, capitalise, italian]{cleveref}
+\usepackage{enumitem}
+\usepackage{caption}
+\usepackage{float}
 
 \tolerance=1
 \emergencystretch=\maxdimen
@@ -61,6 +64,64 @@
 
 \subsection{Feature implementate}
 
+Di seguito sono elencate le feature implementate:
+\begin{itemize}
+    \item Mappa partizionata in aree non sovrapposte con ridimensionamento automatico delle celle in base al livello dello zoom (\cref{fig:overview_map}).
+    \item Range della qualità delle misurazioni calcolato automaticamente, con possibilità di scegliere il numero di classi da creare (\cref{fig:overview_ranges}).
+    \item Misurazione di Wi-Fi, LTE, rumore e Bluetooth con le seguenti modalità:
+    \begin{itemize}[topsep=0pt]
+        \item Attiva su comando dell'utente.
+        \item Passiva dopo un determinato intervallo temporale o durante il movimento. 
+        \item In background durante il movimento.
+    \end{itemize}
+    \item Filtro di ricerca per alcune tipologie di misurazioni (Wi-Fi e Bluetooth)
+    \item Notifiche per aree prive di misurazioni recenti.
+    \item Esportazione su file e importazione delle misurazioni (\cref{fig:overview_import_export}).
+\end{itemize}
+
+
+\subsection{Screenshot applicazione}
+
+\begin{figure}[H]
+    \centering
+    \begin{minipage}[b]{0.25\textwidth}
+      \includegraphics[width=\textwidth]{./img/overview/map_zoom1.jpg}
+    \end{minipage}
+    \hspace*{1cm}
+    \begin{minipage}[b]{0.25\textwidth}
+      \includegraphics[width=\textwidth]{./img/overview/map_zoom2.jpg}
+    \end{minipage}
+    \caption{Mappa con celle ridimensionate automaticamente} \label{fig:overview_map}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{minipage}[b]{0.25\textwidth}
+      \includegraphics[width=\textwidth]{./img/overview/map_zoom1.jpg}
+      \caption*{Suddivisione in 3 range}
+    \end{minipage}
+    \hspace*{1cm}
+    \begin{minipage}[b]{0.25\textwidth}
+      \includegraphics[width=\textwidth]{./img/overview/map_ranges.jpg}
+      \caption*{Suddivisione in 2 range}
+    \end{minipage}
+    \caption{Range misurazioni calcolati algoritmicamente} \label{fig:overview_ranges}
+\end{figure}
+
+\begin{figure}[H]
+    \centering
+    \begin{minipage}[b]{0.25\textwidth}
+      \includegraphics[width=\textwidth]{./img/overview/export1.jpg}
+    \end{minipage}
+    \begin{minipage}[b]{0.25\textwidth}
+      \includegraphics[width=\textwidth]{./img/overview/export2.jpg}
+    \end{minipage}
+    \hspace*{1cm}
+    \begin{minipage}[b]{0.25\textwidth}
+      \includegraphics[width=\textwidth]{./img/overview/import.jpg}
+    \end{minipage}
+    \caption{Esportazione e importazione da file} \label{fig:overview_import_export}
+\end{figure}
 
 
 
@@ -88,7 +149,7 @@ Per questioni estetiche, gli offset applicati alle coordinate sono approssimati 
     \begin{minipage}[b]{0.45\textwidth}
       \includegraphics[width=\textwidth]{./img/tile_approx.jpg}
     \end{minipage}
-    \caption{Offset calcolati in maniera precisa (sinistra) e approssimato (destra)} \label{fig:tile_offset}
+    \caption{Offset calcolati in maniera precisa (sinistra) e approssimata (destra)} \label{fig:tile_offset}
 \end{figure}
 
 \subsubsection{Generazione griglia}
