@@ -176,10 +176,22 @@ In \cref{table:packages} è descritta l'organizzazione dei package:
 \section{Problemi noti}
 
 \subsection{Scansione Wi-Fi}
+A partire dall'API 26, sono state introdotte delle restrizioni\footnote{\url{https://developer.android.com/guide/topics/connectivity/wifi-scan}} al numero di richieste di scansione Wi-Fi che un'applicazione può effettuare.
 
-\subsection{Servizio in background}
+Per tale motivo, può capitare che una misurazione del Wi-Fi sia in grado di ottenere solo informazioni riguardanti la rete attualmente connessa.
+
+
+\subsection{Servizi in background}
+Può capitare su alcune marche di telefoni\footnote{\url{https://dontkillmyapp.com/}} che la politica di ottimizzazione abbia un comportamento molto aggressivo nei confronti dei servizi in background con la conseguente terminazione una volta che l'applicazione viene chiusa.
+
+Come "soluzione", quando l'utente attiva una funzionalità che richiede un servizio in background, viene mostrato un dialog che consiglia di disabilitare l'ottimizzazione della batteria per l'applicazione.
+
 
 \subsection{Importazione}
+I file in cui vengono esportate le misurazioni vengono riconosciuti dall'\texttt{intent-filter} attraverso l'estensione. Ciò però non è sempre possibile qualora il file sia salvato in un'altra applicazione che salva i propri contenuti con un nome alternativo.
+
+Per aggirare il problema, l'\texttt{intent-filter} è stato esteso per considerare un dominio più ampio di file accettati con la conseguenza che l'operazione di importazione è disponibile anche per file non inerenti all'applicazione.
+
 
 
 \end{document}
