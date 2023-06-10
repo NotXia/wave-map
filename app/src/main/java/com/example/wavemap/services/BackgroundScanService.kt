@@ -82,6 +82,8 @@ class BackgroundScanService : Service() {
     private var should_notify_uncovered = false
     private var should_background_scan = false
 
+    private val RECENT_MEASURE_TOLERANCE = 1000*60*60*24
+
 
     override fun onBind(intent: Intent): IBinder? {
         return null
@@ -117,7 +119,7 @@ class BackgroundScanService : Service() {
                                     1
                                 )
 
-                                if (measure.isEmpty() || System.currentTimeMillis() - measure[0].timestamp > 1000*60*60*24) {
+                                if (measure.isEmpty() || System.currentTimeMillis() - measure[0].timestamp > RECENT_MEASURE_TOLERANCE) {
                                     UncoveredAreaNotification.send(applicationContext, UNCOVERED_NOTIFICATION_ID)
                                     return@forEach
                                 }
