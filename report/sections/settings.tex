@@ -1,0 +1,9 @@
+
+\subsection{Impostazioni}
+Le impostazioni sono implementate con la libreria \texttt{Preferences}\footnote{\url{https://developer.android.com/develop/ui/views/components/settings/organize-your-settings}}.
+
+Il punto di entrata è implementato nell'activity \texttt{SettingsActivity} che carica il fragment contenente le impostazioni principali descritte in \texttt{main\_preferences.xml}. 
+
+In aggiunta, ciascun \textit{sampler} ha una propria pagina dedicata contenente impostazioni specifiche.
+Poiché tutti i \textit{sampler} hanno le stesse proprietà nelle impostazioni, è stata creata come classe radice \texttt{MeasureSettingsFragment} che estende \texttt{AppCompatActivity} e genera dinamicamente i vari campi della pagina, senza avere la necessità di descriverli separatamente in un file \texttt{xml}. 
+Quindi per ciascun \textit{sampler} è implementata una classe che eredita \texttt{MeasureSettingsFragment} inizializzata con i parametri specifici necessari e quest'ultima viene utilizzata come destinazione del collegamento presente nella pagina principale delle impostazioni.

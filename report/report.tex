@@ -13,6 +13,7 @@
 \SetAlgorithmName{Algoritmo}{Algoritmo}{Elenco degli algoritmi}
 \crefname{algocf}{Algoritmo}{Algoritmo}
 \usepackage{array}
+\usepackage[bottom]{footmisc}
 
 \tolerance=1
 \emergencystretch=\maxdimen
@@ -163,165 +164,12 @@ In \cref{table:packages} è descritta l'organizzazione dei package:
   \caption{Organizzazione package}\label{table:packages}
 \end{table}
 
-
-\subsection{Mappa}
-Per la mappa è stato utilizzato \gmaps{} e l'implementazione è contenuta nel fragment \texttt{WaveHeatMapFragment}.
-
-\subsubsection{Generazione cella}
-Una cella della mappa rappresenta la misurazione di un'area quadrata\footnote{Esclusa la zona equatoriale, le celle appariranno rettangolari} e la dimensione di quest'ultima scala automaticamente in base al livello dello zoom.
-
-Una cella è descritta dalle coordinate del vertice superiore sinistro (nord-ovest) e a partire da questa vengono calcolate le coordinate degli altri convertendo la dimensione della cella (in metri) in un offset da applicare a latitudine e longitudine.
-Per questioni estetiche, gli offset sono approssimati in modo tale che tutte le righe siano allineate verticalmente (\cref{fig:tile_offset}).
-\begin{figure}[H]
-    \centering
-    \begin{minipage}[b]{0.45\textwidth}
-      \includegraphics[width=\textwidth]{./img/tile_no_approx.jpg}
-    \end{minipage}
-    \hfill
-    \begin{minipage}[b]{0.45\textwidth}
-      \includegraphics[width=\textwidth]{./img/tile_approx.jpg}
-    \end{minipage}
-    \caption{Offset calcolati in maniera precisa (sinistra) e approssimata (destra)} \label{fig:tile_offset}
-\end{figure}
-
-Il colore di una cella è determinato dal valore e dal tipo di misurazione, e viene impostato in formato HSV modificando il valore della tinta (hue).
-Per ciascuna tipologia di misurazione sono specificati gli estremi del range di qualità e il numero di intervalli in cui suddividerlo.
-La tinta è quindi determinata collocando il valore della misurazione in uno dei sotto-intervalli del range e selezionando come valore finale l'estremo inferiore (\cref{alg:hue}).
-
-\begin{algorithm}[H]
-  \caption{Tinta di una cella}\label{alg:hue}
-  \SetAlgoLined
-  \SetKwProg{Fn}{fun}{}{end}
-  \Fn{\textup{\texttt{{getHue(measure, measure\_range=[$a$, $b$], hue\_range=[$0$, $150$], n\_ranges)}}}}{
-    $\texttt{hue} \gets \text{\texttt{measure} scalata da \texttt{measure\_range} a \texttt{hue\_range}}$\\
-    $\texttt{hue} \gets \text{\texttt{hue} discretizzata in \texttt{hue\_range} suddiviso in \texttt{n\_ranges} valori}$\\
-    return \texttt{hue}
-  }
-\end{algorithm}
-
-Infine, per ogni cella è presente un'etichetta contenente il valore della misurazione. Poiché \gmaps{} non permette di inserire esplicitamente del testo nella mappa, l'implementazione prevede di generare l'etichetta come un'immagine che viene poi impostata come icona di un marker. Inoltre, in caso di necessità, la dimensione del testo viene scalata per far in modo che rientri nei limiti della cella.
-
-
-\subsubsection{Generazione griglia}
-La griglia è composta da celle generate relativamente ad una posizione di riferimento. In particolare, in fase di inizializzazione viene designata come cella di riferimento quella che pone la posizione dell'utente al centro e in base a questa è possibile determinare la posizione di tutte le altre celle della mappa. 
-
-Nello specifico, date delle coordinate $(\texttt{pos}_{\texttt{lat}}, \texttt{pos}_{\texttt{lon}})$, per determinare la cella che la contiene si calcola il numero di celle da saltare rispetto a quella di riferimento: 
-\begin{equation*}
-    \texttt{to\_skip\_tiles}_\texttt{lat} =
-        \lceil \frac{\texttt{pos}_{\texttt{lat}} - \texttt{center\_top\_left}_{\texttt{lat}}}{\texttt{latitudeOffset(tile\_length\_meters)}} \rceil
-\end{equation*}
-\begin{equation*}
-    \texttt{to\_skip\_tiles}_\texttt{lon} =
-        \lfloor \frac{\texttt{pos}_{\texttt{lon}} - \texttt{center\_top\_left}_{\texttt{lon}}}{\texttt{longitudeOffset(tile\_length\_meters)}} \rfloor
-\end{equation*}
-Le coordinate del vertice superiore sinistro della cella che contiene $(\texttt{pos}_{\texttt{lat}}, \texttt{pos}_{\texttt{lon}})$ sono quindi:
-\begin{equation*}
-    \texttt{tile}_\texttt{lat} = \texttt{center\_top\_left}_{\texttt{lat}} + (\texttt{to\_skip\_tiles}_\texttt{lat} \cdot \texttt{latitudeOffset(tile\_length\_meters)})
-\end{equation*}
-\begin{equation*}
-    \texttt{tile}_\texttt{lon} = \texttt{center\_top\_left}_{\texttt{lon}} + (\texttt{to\_skip\_tiles}_\texttt{lon} \cdot \texttt{longitudeOffset(tile\_length\_meters)})
-\end{equation*}
-
-Con questo approccio, ogni volta che viene spostata la visuale della mappa, la griglia viene generata iterando a partire dalle coordinate dell'angolo nord-ovest visibile dello schermo, fino a raggiungere l'angolo sud-est. 
-
-In aggiunta, per maggiore efficienza, si tiene traccia delle celle generate in modo da evitare di dover ridisegnare l'intera area visibile ad ogni movimento della mappa. Questo meccanismo viene resettato quando viene cambiato il livello di zoom, in quanto tutte le celle già presenti diventano obsolete e vengono necessariamente cancellate.
-
-
-
-\subsection{Raccolta dei dati}
-
-\subsubsection{Struttura e memorizzazione delle misurazioni}
-Una misurazione è descritta dall'interfaccia \texttt{WaveMeasure} e contiene il valore della misurazione, un timestamp, la posizione e un flag per indicare se si tratta di una misurazione propria o ottenuta tramite condivisione. 
-In aggiunta, è presente un campo per informazioni aggiuntive utile per distinguere alcune tipologie di misurazioni (es. per Wi-Fi e Bluetooth viene salvato il BSSID).
-
-L'interfaccia \texttt{WaveMeasure} viene quindi utilizzata per implementare la classe \texttt{MeasureTable} che descrive la tabella del database dedicata per memorizzare le misurazioni. 
-Tutte le misurazioni sono salvate nella stessa tabella e sono differenziate da un campo (\texttt{type}) aggiunto in fase di salvataggio nel database.
-Inoltre, ciascuna misura è identificata univocamente da un UUID, utile anche per differenziare le misurazioni provenienti da altri utenti.
-
-In aggiunta, una seconda tabella descritta da \texttt{BSSIDTable} contiene la mappatura da BSSID a SSID.
-
-
-\subsubsection{Sampler}
-Per la raccolta dei dati è stato introdotto il concetto di \textit{sampler} per gestire in maniera modulare le misurazioni.
-Nello specifico, un \textit{sampler} è descritto dalla classe astratta \texttt{WaveSampler} e richiede l'implementazione dei seguenti metodi:
-\begin{itemize}
-    \item \texttt{sample} per prendere una nuova misurazione.
-    \item \texttt{store} per il salvataggio dei dati nel database.
-    \item \texttt{retrieve} per la ricerca dei dati note le coordinate dei vertici di una cella della mappa.
-\end{itemize}
-Inoltre, sono esposte le seguenti funzioni ausiliarie:
-\begin{itemize}
-    \item \texttt{average} richiama \texttt{retrieve} e restituisce la media dei valori.
-    \item \texttt{sampleAndStore} richiama in sequenza \texttt{sample} e \texttt{store}.
-\end{itemize}
-Per maggiore flessibilità, le misure vengono sempre intese come liste di \texttt{WaveMeasure}. Ciò permette di gestire misurazioni che per loro natura non generano un'unica misurazione (es. Wi-Fi e Bluetooth).
-
-A partire da \texttt{WaveSampler} sono quindi implementati i \textit{sampler} per:
-\begin{itemize}
-  \item Wi-Fi (\texttt{WiFiSampler}): 
-    \begin{itemize}[topsep=0em]
-      \item Ottiene la potenza della rete al quale il dispositivo è attualmente connesso tramite il servizio di sistema \texttt{ConnectivityManager}. Per versioni inferiori alla API 29, viene invece utilizzato il \texttt{WifiManager}.
-      \item Misura la potenza delle reti circostanti registrando un \texttt{BroadcastReceiver} con filtro \texttt{WifiManager.SCAN\_RESULTS\_AVAILABLE\_ACTION} e richiedendo una scansione completa attraverso il \texttt{WifiManager}.
-    \end{itemize}
-  \item Bluetooth (\texttt{BluetoothSampler}):
-    \begin{itemize}[topsep=0em]
-      \item Misura la potenza dei dispositivi accoppiati mediante il \texttt{BluetoothManager}.
-      \item Misura la potenza dei dispositivi circostanti registrando un \texttt{BroadcastReceiver} con filtro \texttt{BluetoothDevice.ACTION\_FOUND} e richiedendo al \texttt{BluetoothManager} una scansione completa.
-    \end{itemize}
-  \item LTE (\texttt{LTESampler}): ottiene la potenza del segnale LTE tramite il \texttt{TelephonyManager}.
-  \item Suono (\texttt{NoiseSampler}): viene fatta la media di una serie di campionature effettuate utilizzando un \texttt{MediaRecorder}.
-\end{itemize}
-
-
-
-\subsection{Servizi in background}
-La classe \texttt{BackgroundScanService} estende \texttt{Service} e implementa le funzionalità dell'applicazione attive in background.
-Durante la creazione, è necessario specificare nell'\texttt{Intent} i sotto-servizi richiesti (scansione in background e notificazione di aree prive di misurazioni recenti).
-
-In fase di avvio del servizio, viene inizializzato un \texttt{FusedLocationProviderClient} impostato per fornire periodicamente la posizione del dispositivo. In particolare, gli aggiornamenti vengono notificati dopo che è stata percorsa una distanza minima dalla posizione precedente e hanno una priorità impostata a \texttt{PRIORITY\_BALANCED\_POWER\_ACCURACY} per preservare la batteria del dispositivo.
-
-Le operazioni effettuate alla ricezione di un aggiornamento della posizione sono (assumendo che siano abilitate nelle impostazioni):
-\begin{enumerate}
-  \item Verifica se l'area è coperta da misurazioni recenti, in caso negativo viene inviata una notifica.
-        Per evitare di inviare notifiche troppo frequentemente, viene tenuto traccia del momento in cui è stata inviata quella più recente in modo tale da poter ignorare le notifiche successive se dovessero essere create a distanza troppo ravvicinata.
-  \item Effettua una misurazione completa utilizzando tutti i \textit{sampler}.
-\end{enumerate}
-
-Nel caso in cui sia necessario effettuare misurazioni in background, il servizio viene avviato come  \textit{foreground service}. Ciò è necessario in quanto l'accesso al microfono non è consentito per servizi in background; inoltre, in questo modo si ha una maggiore trasparenza nei confronti dell'utente che è informato tramite una notifica sul fatto che l'applicazione stia effettuando delle scansioni anche quando l'applicazione non è attivamente in uso.
-
-
-
-\subsection{Condivisione dati}
-
-Le operazioni per l'esportazione e l'importazione dei dati sono implementate come metodi statici della classe \texttt{ShareMeasures}.
-
-La condivisione dei dati avviene tramite la creazione di un file contenente le misurazioni.
-Per maggiore interoperabilità con eventuali estensioni, i dati vengono salvati in formato JSON e per tale scopo viene utilizzata la libreria \texttt{Gson}.
-
-Per facilitare l'estensione delle funzionalità di condivisione, la navigazione tra i fragment dedicati alla condivisione è stato implementato utilizzando Navigation component.
-
-\subsubsection{Esportazione}
-L'esportazione è gestita dal fragment \texttt{FileExportFragment} e ViewModel \texttt{FileExportViewModel}.
-
-Durante la fase di esportazione, tutte le misurazioni e tutti i BSSID salvati nel database vengono convertiti in una stringa JSON, assieme ad alcuni metadati. Il risultato è quindi temporaneamente salvato nella cache dell'applicazione.
-
-L'utente ha quindi la possibilità di salvare il risultato in un file locale nella cartella \textit{Downloads} oppure di condividerlo attraverso un \texttt{Intent} di tipo \texttt{ACTION\_SEND}.
-
-
-\subsubsection{Importazione}
-L'importazione è gestita dall'activity \texttt{ImportActivity} e ViewModel \texttt{ImportViewModel}.
-
-\texttt{ImportActivity} ha come \texttt{intent-filter} azioni del tipo \texttt{VIEW} e \texttt{SEND}, e quindi permette di selezionare l'azione di importazione quando l'utente apre o condivide un file.
-
-Una volta aperto e validato un file di misurazioni, l'importazione consiste nell'inserire nel database tutte le misurazioni presenti marcandole come misure ottenute per condivisione. Per evitare duplicati, l'UUID viene usato come discriminante e vengono quindi ignorate tutte le misurazioni già presenti.
-
-Analogamente, la tabella dei BSSID viene importata escludendo le righe già note.
-
-
-\subsection{Componenti}
-\subsubsection{App principale}
-\subsubsection{Impostazioni}
-\subsubsection{Condivisione}
+\input{sections/map.tex}
+\input{sections/sampler.tex}
+\input{sections/main.tex}
+\input{sections/settings.tex}
+\input{sections/background.tex}
+\input{sections/share.tex}
 
 
 

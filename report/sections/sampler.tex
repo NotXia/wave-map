@@ -1,0 +1,43 @@
+\subsection{Raccolta dei dati}
+
+\subsubsection{Struttura e memorizzazione delle misurazioni}
+Una misurazione è descritta dall'interfaccia \texttt{WaveMeasure} e contiene il valore della misurazione, un timestamp, la posizione e un flag per indicare se si tratta di una misurazione propria o ottenuta tramite condivisione. 
+In aggiunta, è presente un campo per informazioni aggiuntive utile per distinguere alcune tipologie di misurazioni (es. per Wi-Fi e Bluetooth viene salvato il BSSID).
+
+L'interfaccia \texttt{WaveMeasure} viene quindi utilizzata per implementare la classe \texttt{MeasureTable} che descrive la tabella del database dedicata per memorizzare le misurazioni. 
+Tutte le misurazioni sono salvate nella stessa tabella e sono differenziate da un campo (\texttt{type}) aggiunto in fase di salvataggio nel database.
+Inoltre, ciascuna misura è identificata univocamente da un UUID, utile anche per differenziare le misurazioni provenienti da altri utenti.
+
+In aggiunta, una seconda tabella descritta da \texttt{BSSIDTable} contiene la mappatura da BSSID a SSID.
+
+
+\subsubsection{Sampler}
+Per la raccolta dei dati è stato introdotto il concetto di \textit{sampler} per gestire in maniera modulare le misurazioni.
+Nello specifico, un \textit{sampler} è descritto dalla classe astratta \texttt{WaveSampler} e richiede l'implementazione dei seguenti metodi:
+\begin{itemize}
+    \item \texttt{sample} per prendere una nuova misurazione.
+    \item \texttt{store} per il salvataggio dei dati nel database.
+    \item \texttt{retrieve} per la ricerca dei dati note le coordinate dei vertici di una cella della mappa.
+\end{itemize}
+Inoltre, sono esposte le seguenti funzioni ausiliarie:
+\begin{itemize}
+    \item \texttt{average} richiama \texttt{retrieve} e restituisce la media dei valori.
+    \item \texttt{sampleAndStore} richiama in sequenza \texttt{sample} e \texttt{store}.
+\end{itemize}
+Per maggiore flessibilità, le misure vengono sempre intese come liste di \texttt{WaveMeasure}. Ciò permette di gestire misurazioni che per loro natura non generano un'unica misurazione (es. Wi-Fi e Bluetooth).
+
+A partire da \texttt{WaveSampler} sono quindi implementati i \textit{sampler} per:
+\begin{itemize}
+  \item Wi-Fi (\texttt{WiFiSampler}): 
+    \begin{itemize}[topsep=0em]
+      \item Ottiene la potenza della rete al quale il dispositivo è attualmente connesso tramite il servizio di sistema \texttt{ConnectivityManager}. Per versioni inferiori alla API 29, viene invece utilizzato il \texttt{WifiManager}.
+      \item Misura la potenza delle reti circostanti registrando un \texttt{BroadcastReceiver} con filtro \texttt{WifiManager.SCAN\_RESULTS\_AVAILABLE\_ACTION} e richiedendo una scansione completa attraverso il \texttt{WifiManager}.
+    \end{itemize}
+  \item Bluetooth (\texttt{BluetoothSampler}):
+    \begin{itemize}[topsep=0em]
+      \item Misura la potenza dei dispositivi accoppiati mediante il \texttt{BluetoothManager}.
+      \item Misura la potenza dei dispositivi circostanti registrando un \texttt{BroadcastReceiver} con filtro \texttt{BluetoothDevice.ACTION\_FOUND} e richiedendo al \texttt{BluetoothManager} una scansione completa.
+    \end{itemize}
+  \item LTE (\texttt{LTESampler}): ottiene la potenza del segnale LTE tramite il \texttt{TelephonyManager}.
+  \item Suono (\texttt{NoiseSampler}): viene fatta la media di una serie di campionature effettuate utilizzando un \texttt{MediaRecorder}.
+\end{itemize}

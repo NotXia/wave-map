@@ -1,0 +1,14 @@
+\subsection{Servizi in background}
+La classe \texttt{BackgroundScanService} estende \texttt{Service} e implementa le funzionalità dell'applicazione attive in background.
+Durante la creazione, è necessario specificare nell'\texttt{Intent} i sotto-servizi richiesti (scansione in background e notificazione di aree prive di misurazioni recenti).
+
+In fase di avvio del servizio, viene inizializzato un \texttt{FusedLocationProviderClient} impostato per fornire periodicamente la posizione del dispositivo. In particolare, gli aggiornamenti vengono notificati dopo che è stata percorsa una distanza minima dalla posizione precedente e hanno una priorità impostata a \texttt{PRIORITY\_BALANCED\_POWER\_ACCURACY} per preservare la batteria del dispositivo.
+
+Le operazioni effettuate alla ricezione di un aggiornamento della posizione sono (assumendo che siano abilitate nelle impostazioni):
+\begin{enumerate}
+  \item Verifica se l'area è coperta da misurazioni recenti, in caso negativo viene inviata una notifica.
+        Per evitare di inviare notifiche troppo frequentemente, viene tenuto traccia del momento in cui è stata inviata quella più recente in modo tale da poter ignorare le notifiche successive se dovessero essere create a distanza troppo ravvicinata.
+  \item Effettua una misurazione completa utilizzando tutti i \textit{sampler}.
+\end{enumerate}
+
+Nel caso in cui sia necessario effettuare misurazioni in background, il servizio viene avviato come  \textit{foreground service}. Ciò è necessario in quanto l'accesso al microfono non è consentito per servizi in background; inoltre, in questo modo si ha una maggiore trasparenza nei confronti dell'utente che è informato tramite una notifica sul fatto che l'applicazione stia effettuando delle scansioni anche quando l'applicazione non è attivamente in uso.
