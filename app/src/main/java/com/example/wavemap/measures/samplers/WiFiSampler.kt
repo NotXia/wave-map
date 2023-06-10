@@ -80,7 +80,7 @@ class WiFiSampler(
             val request = NetworkRequest.Builder().addTransportType(NetworkCapabilities.TRANSPORT_WIFI).build()
             val connectivity_manager : ConnectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
             val timeout_handler = Handler(Looper.getMainLooper())
-            val callback = object : ConnectivityManager.NetworkCallback(if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) FLAG_INCLUDE_LOCATION_INFO else 0) {
+            val callback = object : ConnectivityManager.NetworkCallback() {
                 override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
                     timeout_handler.removeCallbacksAndMessages(null)
                     connectivity_manager.unregisterNetworkCallback(this)
