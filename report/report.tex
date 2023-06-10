@@ -74,11 +74,11 @@ Di seguito sono elencate le feature implementate:
 \begin{itemize}
     \item Mappa partizionata in aree non sovrapposte con ridimensionamento automatico delle celle in base al livello dello zoom (\cref{fig:overview_map}).
     \item Range della qualità delle misurazioni calcolato automaticamente, con possibilità di scegliere il numero di classi da creare (\cref{fig:overview_ranges}).
-    \item Misurazione di Wi-Fi, LTE, rumore e Bluetooth con le seguenti modalità:
+    \item Misurazione di Wi-Fi, LTE, Bluetooth e suono con le seguenti modalità:
     \begin{itemize}[topsep=0pt]
-        \item Attiva su comando dell'utente.
-        \item Passiva dopo un determinato intervallo temporale o durante il movimento. 
-        \item In background durante il movimento.
+        \item Attiva: su comando dell'utente.
+        \item Passiva: dopo un determinato intervallo temporale o durante il movimento. 
+        \item In background: durante il movimento.
     \end{itemize}
     \item Filtro di ricerca per alcune tipologie di misurazioni (Wi-Fi e Bluetooth)
     \item Notifiche per aree prive di misurazioni recenti.
@@ -97,7 +97,7 @@ Di seguito sono elencate le feature implementate:
     \begin{minipage}[b]{0.25\textwidth}
       \includegraphics[width=\textwidth]{./img/overview/map_zoom2.jpg}
     \end{minipage}
-    \caption{Mappa con celle ridimensionate automaticamente} \label{fig:overview_map}
+    \caption{Mappa con celle ridimensionate in base al livello di zoom} \label{fig:overview_map}
 \end{figure}
 
 \begin{figure}[H]
@@ -197,7 +197,7 @@ La tinta è quindi determinata collocando il valore della misurazione in uno dei
   }
 \end{algorithm}
 
-Infine, per ogni cella è presente un'etichetta contenente il valore della misurazione. Poiché \gmaps{} non permette di inserire esplicitamente del testo nella mappa, l'implementazione prevede di generare l'etichetta come un'immagine che viene poi impostata come icona di un marker. Inoltre, la dimensione del testo viene scalata per far in modo che rientri nei limiti della cella.
+Infine, per ogni cella è presente un'etichetta contenente il valore della misurazione. Poiché \gmaps{} non permette di inserire esplicitamente del testo nella mappa, l'implementazione prevede di generare l'etichetta come un'immagine che viene poi impostata come icona di un marker. Inoltre, in caso di necessità, la dimensione del testo viene scalata per far in modo che rientri nei limiti della cella.
 
 
 \subsubsection{Generazione griglia}
@@ -222,7 +222,7 @@ Le coordinate del vertice superiore sinistro della cella che contiene $(\texttt{
 
 Con questo approccio, ogni volta che viene spostata la visuale della mappa, la griglia viene generata iterando a partire dalle coordinate dell'angolo nord-ovest visibile dello schermo, fino a raggiungere l'angolo sud-est. 
 
-In aggiunta, per maggiore efficienza, si tiene traccia delle celle generate in modo da evitare di ridisegnare una cella già presente. Questo meccanismo viene resettato quando viene cambiato il livello di zoom, in quanto tutte le celle già presenti diventano obsolete e vengono cancellate.
+In aggiunta, per maggiore efficienza, si tiene traccia delle celle generate in modo da evitare di dover ridisegnare l'intera area visibile ad ogni movimento della mappa. Questo meccanismo viene resettato quando viene cambiato il livello di zoom, in quanto tutte le celle già presenti diventano obsolete e vengono necessariamente cancellate.
 
 
 
@@ -279,7 +279,7 @@ In fase di avvio del servizio, viene inizializzato un \texttt{FusedLocationProvi
 
 Le operazioni effettuate alla ricezione di un aggiornamento della posizione sono:
 \begin{enumerate}
-  \item Verifica se l'area è coperta da misurazioni, in caso negativo viene inviata una notifica.
+  \item Verifica se l'area è coperta da misurazioni recenti, in caso negativo viene inviata una notifica.
         Per evitare di inviare notifiche troppo frequentemente, viene tenuto traccia del momento in cui è stata inviata quella più recente in modo tale da poter ignorare le notifiche successive se dovessero essere create a distanza troppo ravvicinata.
   \item Effettua una misurazione completa utilizzando tutti i \textit{sampler}.
 \end{enumerate}
@@ -292,6 +292,8 @@ Le operazioni per l'esportazione e l'importazione dei dati sono implementate com
 
 La condivisione dei dati avviene tramite la creazione di un file contenente le misurazioni.
 Per maggiore interoperabilità con eventuali estensioni, i dati vengono salvati in formato JSON e per tale scopo viene utilizzata la libreria \texttt{Gson}.
+
+Per facilitare l'estensione delle funzionalità di condivisione, la navigazione tra i fragment dedicati alla condivisione è stato implementato utilizzando Navigation component.
 
 \subsubsection{Esportazione}
 L'esportazione è gestita dal fragment \texttt{FileExportFragment} e ViewModel \texttt{FileExportViewModel}.
