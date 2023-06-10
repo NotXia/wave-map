@@ -117,7 +117,7 @@ class BackgroundScanService : Service() {
                                     1
                                 )
 
-                                if (measure.isEmpty()) {
+                                if (measure.isEmpty() || System.currentTimeMillis() - measure[0].timestamp > 1000*60*60*24) {
                                     UncoveredAreaNotification.send(applicationContext, UNCOVERED_NOTIFICATION_ID)
                                     return@forEach
                                 }
