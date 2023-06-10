@@ -61,6 +61,15 @@ class Permissions {
                 else -> arrayOf()
             }
 
+        val disk : Array<String>
+            get() = when {
+                Build.VERSION.SDK_INT < Build.VERSION_CODES.R -> arrayOf(
+                    Manifest.permission.WRITE_EXTERNAL_STORAGE,
+                    Manifest.permission.READ_EXTERNAL_STORAGE
+                )
+                else -> arrayOf()
+            }
+
         val allRequired : Array<String>
             get() = gps + wifi + lte + noise + bluetooth + notification
 

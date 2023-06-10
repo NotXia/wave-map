@@ -12,6 +12,7 @@ import android.view.View
 import android.view.ViewGroup
 import android.widget.Button
 import android.widget.Toast
+import androidx.activity.result.contract.ActivityResultContracts
 import androidx.core.app.NotificationCompat
 import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
@@ -21,9 +22,10 @@ import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
 import com.example.wavemap.R
 import com.example.wavemap.dialogs.LoadingDialog
-import com.example.wavemap.dialogs.MeasureFilterDialog
 import com.example.wavemap.dialogs.ShareExportDialog
+import com.example.wavemap.dialogs.settings.MissingDiskPermissionsDialog
 import com.example.wavemap.ui.share.viewmodels.FileExportViewModel
+import com.example.wavemap.utilities.Permissions
 import java.io.*
 
 
@@ -32,6 +34,17 @@ class FileExportFragment : Fragment() {
     private val view_model : FileExportViewModel by viewModels()
 
     private var loading_dialog = LoadingDialog()
+
+    private val permissions_check_and_save = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
+        // Checks if the minimum required permissions are granted
+        if (!Permissions.disk.all{ permission -> ContextCompat.checkSelfPermission(requireContext(), permission) == PackageManager.PERMISSION_GRANTED }) {
+            MissingDiskPermissionsDialog().show(childFragmentManager, MissingDiskPermissionsDialog.TAG)
+        }
+        else {
+            loading_dialog.show(childFragmentManager, LoadingDialog.TAG)
+            view_model.downloadExport()
+        }
+    }
 
     override fun onCreateView(inflater: LayoutInflater, container: ViewGroup?, savedInstanceState: Bundle?): View? {
         return inflater.inflate(R.layout.fragment_file_export, container, false)
@@ -56,8 +69,7 @@ class FileExportFragment : Fragment() {
             } else {
                 ShareExportDialog(
                     onSave = {
-                        loading_dialog.show(childFragmentManager, LoadingDialog.TAG)
-                        view_model.downloadExport()
+                        permissions_check_and_save.launch(Permissions.disk)
                     },
                     onShare = {
                         share(view_model.export_path)

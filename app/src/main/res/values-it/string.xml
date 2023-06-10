@@ -95,6 +95,9 @@
     <string name="wifi_not_enabled">Il Wi-Fi non è attivo</string>
     <string name="bluetooth_not_enabled">Il Bluetooth non è attivo</string>
 
+    <string name="missing_disk_permission">Permessi di scrittura mancanti</string>
+    <string name="missing_disk_permission_desc">Impossibile creare un file</string>
+
     <!--  Sharing  -->
     <string name="export">Esporta</string>
     <string name="import_measures">Importa</string>

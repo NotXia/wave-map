@@ -93,6 +93,9 @@
     <string name="wifi_not_enabled">Wi-Fi is not enabled</string>
     <string name="bluetooth_not_enabled">Bluetooth is not enabled</string>
 
+    <string name="missing_disk_permission">Missing disk permission</string>
+    <string name="missing_disk_permission_desc">Unable to create a file</string>
+
     <!--  Sharing  -->
     <string name="export">Export</string>
     <string name="import_measures">Import</string>
