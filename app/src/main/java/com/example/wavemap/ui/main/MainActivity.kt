@@ -111,7 +111,7 @@ class MainActivity : AppCompatActivity() {
             view_model.curr_sampler.view_model.loadSettingsPreferences() // In case settings changed
             map_fragment.refreshMap()
             view_model.startPeriodicScan()
-            BackgroundScanService.stop(this)
+            BackgroundScanService.forceStop(this)
         }
         catch (err : Exception) {
             Log.e("resume", "$err")

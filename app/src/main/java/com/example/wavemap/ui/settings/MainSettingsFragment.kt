@@ -10,7 +10,6 @@ import com.example.wavemap.R
 import com.example.wavemap.dialogs.settings.MissingBackgroundGPSPermissionsDialog
 import com.example.wavemap.dialogs.settings.MissingBatteryPermissionsDialog
 import com.example.wavemap.dialogs.settings.MissingNotificationsPermissionsDialog
-import com.example.wavemap.services.BackgroundScanService
 import com.example.wavemap.utilities.Misc
 import com.example.wavemap.utilities.Permissions
 
@@ -18,8 +17,6 @@ class MainSettingsFragment : PreferenceFragmentCompat() {
     private val check_notification_permission = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
         if (!Permissions.notification.all{ permission -> ContextCompat.checkSelfPermission(requireContext(), permission) == PackageManager.PERMISSION_GRANTED }) {
             MissingNotificationsPermissionsDialog().show(parentFragmentManager, MissingNotificationsPermissionsDialog.TAG)
-        } else {
-            BackgroundScanService.start(requireActivity())
         }
     }
 
@@ -34,11 +31,7 @@ class MainSettingsFragment : PreferenceFragmentCompat() {
         val background_scan = preferenceManager.findPreference<CheckBoxPreference>("background_scan")
         background_scan?.onPreferenceChangeListener = Preference.OnPreferenceChangeListener { _, enable ->
             if (enable as Boolean) {
-                if (!checkAndPromptServicePermissions()) {
-                    return@OnPreferenceChangeListener false
-                } else {
-                    BackgroundScanService.start(requireActivity())
-                }
+                return@OnPreferenceChangeListener checkAndPromptServicePermissions()
             }
             return@OnPreferenceChangeListener true
         }

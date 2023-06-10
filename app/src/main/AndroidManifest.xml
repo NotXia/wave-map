@@ -15,6 +15,8 @@
     <uses-permission android:name="android.permission.BLUETOOTH" android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.BLUETOOTH_ADMIN" android:maxSdkVersion="30" />
     <uses-permission android:name="android.permission.WRITE_EXTERNAL_STORAGE" />
+    <uses-permission android:name="android.permission.FOREGROUND_SERVICE"/>
+
 
     <application
         android:allowBackup="true"
@@ -83,7 +85,8 @@
         <service
             android:name=".services.BackgroundScanService"
             android:exported="false"
-            android:process=":ServiceProcess" />
+            android:process=":ServiceProcess"
+            android:foregroundServiceType="location|microphone" />
 
         <meta-data
             android:name="com.google.android.geo.API_KEY"

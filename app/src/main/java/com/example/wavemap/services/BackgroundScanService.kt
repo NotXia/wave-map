@@ -5,13 +5,10 @@ import android.Manifest
 import android.app.*
 import android.content.Context
 import android.content.Intent
-import android.content.SharedPreferences
 import android.content.pm.PackageManager
 import android.os.IBinder
 import android.os.Looper
 import android.util.Log
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
 import androidx.preference.PreferenceManager
 import androidx.room.Room
@@ -24,8 +21,9 @@ import com.example.wavemap.utilities.Constants
 import com.google.android.gms.location.*
 import kotlinx.coroutines.GlobalScope
 import kotlinx.coroutines.launch
-import com.example.wavemap.R
-import com.example.wavemap.ui.main.MainActivity
+import com.example.wavemap.measures.samplers.NoiseSampler
+import com.example.wavemap.notifications.BackgroundScanningNotification
+import com.example.wavemap.notifications.UncoveredAreaNotification
 import com.example.wavemap.utilities.LocationUtils.Companion.metersToLatitudeOffset
 import com.example.wavemap.utilities.LocationUtils.Companion.metersToLongitudeOffset
 import com.example.wavemap.utilities.Permissions
@@ -35,20 +33,38 @@ import com.google.android.gms.maps.model.LatLng
 class BackgroundScanService : Service() {
 
     companion object {
+        private const val EXTRA_BACKGROUND_SCAN = "background_scan"
+        private const val EXTRA_UNCOVERED_AREA = "uncovered_area"
+
         fun start(activity: Activity) {
             if (!Permissions.check(activity.applicationContext, Permissions.background_gps) || !needToStartService(activity.applicationContext)) {
                 return
             }
-            activity.startService(Intent(activity.applicationContext, BackgroundScanService::class.java))
+            forceStart(activity)
         }
 
         fun stop(activity: Activity) {
-            activity.stopService(Intent(activity.applicationContext, BackgroundScanService::class.java))
+            if (needToStartService(activity.applicationContext)) {
+                return
+            }
+            forceStop(activity)
         }
 
         fun needToStartService(context: Context) : Boolean {
             val pref_manager = PreferenceManager.getDefaultSharedPreferences(context)
             return pref_manager.getBoolean("background_scan", false) || pref_manager.getBoolean("notify_uncovered_area", false)
+        }
+
+        fun forceStart(activity: Activity) {
+            val pref_manager = PreferenceManager.getDefaultSharedPreferences(activity.applicationContext)
+            val intent = Intent(activity.applicationContext, BackgroundScanService::class.java)
+            intent.putExtra(EXTRA_BACKGROUND_SCAN, pref_manager.getBoolean("background_scan", false))
+            intent.putExtra(EXTRA_UNCOVERED_AREA, pref_manager.getBoolean("notify_uncovered_area", false))
+            activity.startService(intent)
+        }
+
+        fun forceStop(activity: Activity) {
+            activity.stopService(Intent(activity.applicationContext, BackgroundScanService::class.java))
         }
     }
 
@@ -57,13 +73,15 @@ class BackgroundScanService : Service() {
     private lateinit var fused_location_provider : FusedLocationProviderClient
     private var first_location = true
 
-    private lateinit var pref_manager : SharedPreferences
-
     private lateinit var samplers : Array<WaveSampler>
     private val tile_size_meters = 10.0
 
-    private var last_uncovered_area_notification_time : Long = 0
-    private val NOTIFICATION_DELAY_MS = 30000
+    private val UNCOVERED_NOTIFICATION_ID = 1
+    private val FOREGROUND_NOTIFICATION_ID = 2
+
+    private var should_notify_uncovered = false
+    private var should_background_scan = false
+
 
     override fun onBind(intent: Intent): IBinder? {
         return null
@@ -76,26 +94,20 @@ class BackgroundScanService : Service() {
         samplers = arrayOf(
             WiFiSampler(applicationContext, null, db),
             LTESampler(applicationContext, db),
-//            NoiseSampler(applicationContext, db),
+            NoiseSampler(applicationContext, db),
             BluetoothSampler(applicationContext, null, db)
         )
-        pref_manager = PreferenceManager.getDefaultSharedPreferences(applicationContext)
-
 
         location_callback = object : LocationCallback() {
             override fun onLocationResult(locationResult: LocationResult) {
-                if (!needToStartService(applicationContext)) { stopSelf() }
+                if (!needToStartService(applicationContext)) { return stopSelf() }
                 if (locationResult.lastLocation == null) { return }
                 if (first_location) { first_location = false; return } // Ignore the first location since it will be very close to when the app was still in foreground
 
                 val location = locationResult.lastLocation!!
 
                 // Uncovered area notification
-                if (pref_manager.getBoolean("notify_uncovered_area", false)) {
-                    if (System.currentTimeMillis() - last_uncovered_area_notification_time < NOTIFICATION_DELAY_MS) {
-                        return // To avoid too pedantic notifications
-                    }
-
+                if (should_notify_uncovered) {
                     GlobalScope.launch {
                         samplers.forEach { sampler ->
                             try {
@@ -106,8 +118,7 @@ class BackgroundScanService : Service() {
                                 )
 
                                 if (measure.isEmpty()) {
-                                    sendUncoveredAreaNotification()
-                                    last_uncovered_area_notification_time = System.currentTimeMillis()
+                                    UncoveredAreaNotification.send(applicationContext, UNCOVERED_NOTIFICATION_ID)
                                     return@forEach
                                 }
                             }
@@ -119,7 +130,7 @@ class BackgroundScanService : Service() {
                 }
 
                 // New measures
-                if (pref_manager.getBoolean("background_scan", false)) {
+                if (should_background_scan) {
                     samplers.forEach { sampler ->
                         GlobalScope.launch {
                             try {
@@ -130,11 +141,18 @@ class BackgroundScanService : Service() {
                         }
                     }
                 }
+
             }
         }
     }
 
     override fun onStartCommand(intent: Intent?, flags: Int, startId: Int): Int {
+        if (intent != null) {
+            should_background_scan = intent.getBooleanExtra(EXTRA_BACKGROUND_SCAN, false)
+            should_notify_uncovered = intent.getBooleanExtra(EXTRA_UNCOVERED_AREA, false)
+        }
+        handleForegroundSwitch()
+
         try {
             startLocationUpdates()
         }
@@ -174,29 +192,12 @@ class BackgroundScanService : Service() {
         catch (err : RuntimeException) { /* Empty */ }
     }
 
-    private fun sendUncoveredAreaNotification() {
-        if ( ContextCompat.checkSelfPermission(applicationContext, Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-            throw SecurityException("Missing POST_NOTIFICATIONS permission")
+    private fun handleForegroundSwitch() {
+        if (should_background_scan) {
+            startForeground(FOREGROUND_NOTIFICATION_ID, BackgroundScanningNotification.build(applicationContext))
+        } else {
+            stopForeground(STOP_FOREGROUND_REMOVE)
         }
-
-        lateinit var notification_builder : NotificationCompat.Builder
-        val channel_id = "ch_uncovered_area"
-        val channel_name: CharSequence = getString(R.string.notification_uncovered_area)
-        val channel_desc = getString(R.string.notification_uncovered_area_desc)
-        val channel = NotificationChannel(channel_id, channel_name, NotificationManager.IMPORTANCE_DEFAULT)
-        channel.description = channel_desc
-        val notificationManager = getSystemService(NotificationManager::class.java)
-        notificationManager.createNotificationChannel(channel)
-        notification_builder = NotificationCompat.Builder(applicationContext, channel_id)
-
-        notification_builder.setContentTitle(getString(R.string.notification_uncovered_area)).setContentText(getString(R.string.notification_uncovered_area_text))
-            .setSmallIcon(R.mipmap.ic_launcher_round)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .setAutoCancel(true)
-            .setContentIntent(TaskStackBuilder.create(this).run {
-                addNextIntentWithParentStack(Intent(applicationContext, MainActivity::class.java))
-                getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-            })
-        NotificationManagerCompat.from(applicationContext).notify(1, notification_builder.build())
     }
+
 }
