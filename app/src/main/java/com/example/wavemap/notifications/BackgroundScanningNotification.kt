@@ -25,7 +25,8 @@ class BackgroundScanningNotification {
             notificationManager.createNotificationChannel(channel)
             val notification_builder = NotificationCompat.Builder(context, channel_id)
 
-            notification_builder.setContentTitle(context.getString(R.string.notification_background)).setContentText(context.getString(R.string.notification_background_text))
+            notification_builder.setContentTitle(context.getString(R.string.notification_background))
+                .setStyle(NotificationCompat.BigTextStyle().bigText(context.getString(R.string.notification_background_text)))
                 .setSmallIcon(R.mipmap.ic_launcher_round)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setContentIntent(TaskStackBuilder.create(context).run {

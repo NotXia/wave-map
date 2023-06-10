@@ -27,8 +27,8 @@ class UncoveredAreaNotification {
             notificationManager.createNotificationChannel(channel)
             val notification_builder = NotificationCompat.Builder(context, channel_id)
 
-            notification_builder.setContentTitle(context.getString(R.string.notification_uncovered_area)).setContentText(context.getString(
-                R.string.notification_uncovered_area_text))
+            notification_builder.setContentTitle(context.getString(R.string.notification_uncovered_area))
+                .setStyle(NotificationCompat.BigTextStyle().bigText(context.getString(R.string.notification_uncovered_area_text)))
                 .setSmallIcon(R.mipmap.ic_launcher_round)
                 .setPriority(NotificationCompat.PRIORITY_DEFAULT)
                 .setAutoCancel(true)
