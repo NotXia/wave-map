@@ -30,7 +30,12 @@ class MainSettingsFragment : PreferenceFragmentCompat() {
         val background_scan = preferenceManager.findPreference<CheckBoxPreference>("background_scan")
         background_scan?.onPreferenceChangeListener = Preference.OnPreferenceChangeListener { _, enable ->
             if (enable as Boolean) {
-                return@OnPreferenceChangeListener checkAndPromptServicePermissions()
+                if (checkAndPromptServicePermissions()) {
+                    check_notification_permission.launch(Permissions.notification)
+                    return@OnPreferenceChangeListener Permissions.notification.all{ permission -> ContextCompat.checkSelfPermission(requireContext(), permission) == PackageManager.PERMISSION_GRANTED }
+                } else {
+                    return@OnPreferenceChangeListener false
+                }
             }
             return@OnPreferenceChangeListener true
         }
