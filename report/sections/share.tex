@@ -11,9 +11,10 @@ Per facilitare future espansioni delle funzionalità di condivisione, la navigaz
 \subsubsection{Esportazione}
 L'esportazione è gestita dal fragment \texttt{FileExportFragment} e ViewModel \texttt{FileExportViewModel}.
 
-Durante la fase di esportazione, tutte le misurazioni e tutti i BSSID salvati nel database vengono convertiti in una stringa JSON, assieme ad alcuni metadati. Il risultato è quindi temporaneamente salvato nella cache dell'applicazione.
+Durante la fase di esportazione, tutte le misurazioni e tutti i BSSID salvati nel database vengono convertiti in una stringa JSON, assieme ad alcuni metadati. Il risultato è quindi temporaneamente salvato nella memoria interna dell'applicazione, in una cartella registrata nel Content Provider per permettere l'accesso ad altre applicazioni durante la condivisione.
 
 L'utente ha quindi la possibilità di salvare il risultato in un file locale nella cartella \textit{Downloads} oppure di condividerlo attraverso un \texttt{Intent} di tipo \texttt{ACTION\_SEND}.
+
 
 
 \subsubsection{Importazione}
@@ -21,7 +22,7 @@ L'importazione è gestita dall'activity \texttt{ImportActivity} e ViewModel \tex
 
 \texttt{ImportActivity} ha come \texttt{intent-filter} azioni del tipo \texttt{VIEW} e \texttt{SEND}, e quindi permette di selezionare l'azione di importazione quando l'utente apre o condivide un file.
 
-Una volta aperto e validato un file di misurazioni, l'importazione consiste nell'inserire nel database tutte le misurazioni presenti marcandole come misure ottenute per condivisione. Per evitare duplicati, l'UUID viene usato come discriminante e vengono quindi ignorate tutte le misurazioni già presenti.
-Inoltre, per evitare valori troppo sparsi, se il timestamp di una misurazione importata è molto vicino rispetto ad una misurazione locale, viene uniformato con quello della misurazione locale.
+Una volta aperto e validato un file di misurazioni, l'importazione consiste nell'inserire nel database tutte le misurazioni presenti marcandole come misure ottenute tramite condivisione. Per evitare duplicati, l'UUID viene usato come discriminante e vengono quindi ignorate tutte le misurazioni già presenti.
+Inoltre, per evitare valori troppo sparsi, se il timestamp di una misurazione importata è molto vicino ad una misurazione locale, viene uniformato con quello della misurazione locale.
 
 Analogamente, la tabella dei BSSID viene importata escludendo le righe già note.

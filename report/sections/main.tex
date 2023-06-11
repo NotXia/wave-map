@@ -32,6 +32,6 @@ Bisogna infine notare che tutte le operazioni asincrone sono legate allo scope \
 
 \subsubsection{MainActivity}
 La \texttt{MainActivity} è il punto di entrata dell'applicazione e comprende la mappa e i comandi dell'utente.
-Oltre a istanziare e interfacciarsi al \texttt{MainViewModel}, gestisce la richiesta dei permessi e gli eventi riguardanti i cambiamenti di casella provenienti da \texttt{WaveHeatMapFragment}.
+Oltre a istanziare e interfacciarsi al \texttt{MainViewModel}, gestisce la richiesta dei permessi (richiedendo sempre un sottoinsieme minimale) e gli eventi riguardanti i cambiamenti di casella provenienti da \texttt{WaveHeatMapFragment}.
 
 Inoltre, si occupa di avviare e fermare i servizi in background durante la fase di creazione e distruzione del proprio ciclo di vita.

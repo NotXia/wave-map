@@ -29,7 +29,9 @@
         \vspace*{5cm}
             
         \Huge
-        \textbf{Cellular Connectivity and\\Noise Map}
+        \textbf{Wave Map}\\
+        \huge
+        \textbf{Cellular Connectivity and Noise Map}
             
         \vspace{0.5cm}
         \LARGE
@@ -81,9 +83,10 @@ Le feature implementate dall'applicazione sono le seguenti:
         \item Passiva: dopo un determinato intervallo temporale o durante il movimento. 
         \item In background: durante il movimento.
     \end{itemize}
-    \item Filtro di ricerca per alcune tipologie di misurazioni (Wi-Fi e Bluetooth)
+    \item Filtro di ricerca per alcune tipologie di misurazioni (Wi-Fi e Bluetooth) (\cref{fig:query}).
     \item Notifiche per aree prive di misurazioni recenti.
     \item Esportazione su file e importazione delle misurazioni (\cref{fig:overview_import_export}).
+    \item Gestione del tema chiaro/scuro e lingue (italiano e inglese).
 \end{itemize}
 
 
@@ -112,7 +115,7 @@ Le feature implementate dall'applicazione sono le seguenti:
       \includegraphics[width=\textwidth]{./img/overview/map_ranges.jpg}
       \caption*{Suddivisione in 2 range}
     \end{minipage}
-    \caption{Range misurazioni calcolati algoritmicamente} \label{fig:overview_ranges}
+    \caption{Range di qualità delle misurazioni calcolati algoritmicamente} \label{fig:overview_ranges}
 \end{figure}
 
 \begin{figure}[H]
@@ -130,13 +133,34 @@ Le feature implementate dall'applicazione sono le seguenti:
     \caption{Esportazione e importazione da file} \label{fig:overview_import_export}
 \end{figure}
 
+\begin{minipage}[b]{0.45\textwidth}
+  \begin{figure}[H]
+    \centering
+    \includegraphics[width=0.50\textwidth]{./img/overview/query.jpg}
+    \caption{Filtro di ricerca} \label{fig:query}
+  \end{figure}
+\end{minipage}
+\hfill
+\begin{minipage}[b]{0.45\textwidth}
+  \begin{figure}[H]
+    \centering
+    \begin{minipage}[b]{0.35\textwidth}
+      \includegraphics[width=\textwidth]{./img/overview/settings1.jpg}
+    \end{minipage}
+    \hspace*{1cm}
+    \begin{minipage}[b]{0.45\textwidth}
+      \includegraphics[width=\textwidth]{./img/overview/settings2.jpg}
+    \end{minipage}
+    \caption{Impostazioni} \label{fig:settings}
+  \end{figure}
+\end{minipage}
 
 
 \section{Scelte progettuali}
 
 \subsection{Informazioni generali}
 Il progetto è stato sviluppato come applicazione nativa utilizzando Kotlin. 
-Come pattern architetturale è stato scelto l'approccio Model-View-ViewModel, mentre per l'interfacciamento con il database locale è stata utilizzata la libreria \texttt{Room}.
+Come pattern architetturale è stato principalmente utilizzato l'approccio Model-View-ViewModel, mentre per l'interfacciamento con il database locale è stata utilizzata la libreria \texttt{Room}.
 
 Le operazioni asincrone sono state principalmente implementate tramite le \texttt{coroutine} e per favorire un codice più "lineare", quando possibile, sono state trasformate le funzioni con callback in funzioni \texttt{suspend} utilizzando come wrapper \texttt{suspendCoroutine}.
 
@@ -164,8 +188,8 @@ L'organizzazione dei package è la seguente:
   \caption{Organizzazione package}\label{table:packages}
 \end{table}
 
-\input{sections/map.tex}
 \input{sections/sampler.tex}
+\input{sections/map.tex}
 \input{sections/main.tex}
 \input{sections/settings.tex}
 \input{sections/background.tex}

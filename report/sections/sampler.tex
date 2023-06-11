@@ -4,7 +4,7 @@
 Una misurazione è descritta dall'interfaccia \texttt{WaveMeasure} e contiene il valore della misurazione, un timestamp, la posizione e un flag per indicare se si tratta di una misurazione propria o ottenuta tramite condivisione. 
 In aggiunta, è presente un campo per informazioni aggiuntive utile per distinguere alcune tipologie di misurazioni (es. per Wi-Fi e Bluetooth viene salvato il BSSID).
 
-L'interfaccia \texttt{WaveMeasure} viene quindi utilizzata per implementare la classe \texttt{MeasureTable} che descrive la tabella del database dedicata per memorizzare le misurazioni. 
+L'interfaccia \texttt{WaveMeasure} viene quindi utilizzata per implementare la classe \texttt{MeasureTable} che descrive la tabella del database dedicata alla memorizzazione delle misurazioni. 
 Tutte le misurazioni sono salvate nella stessa tabella e sono differenziate da un campo (\texttt{type}) aggiunto in fase di salvataggio nel database.
 Inoltre, ciascuna misura è identificata univocamente da un UUID, utile anche per differenziare le misurazioni provenienti da altri utenti.
 
