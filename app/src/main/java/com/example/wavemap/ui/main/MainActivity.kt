@@ -101,7 +101,7 @@ class MainActivity : AppCompatActivity() {
 
     override fun onStart() {
         super.onStart()
-        permissions_check_and_init.launch(Permissions.allRequired)
+        permissions_check_and_init.launch(Permissions.minimumRequired)
     }
 
     override fun onResume() {
