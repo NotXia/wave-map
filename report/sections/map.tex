@@ -1,6 +1,11 @@
 
 \subsection{Mappa}
-Per la mappa è stato utilizzato \gmaps{} e l'implementazione è contenuta nel fragment \texttt{WaveHeatMapFragment}.
+Per la mappa è stato utilizzato \gmaps{} e l'implementazione è contenuta in \texttt{WaveHeatMapFragment}.
+
+Il fragment \texttt{WaveHeatMapFragment} gestisce la generazione delle celle e utilizza un \texttt{MeasureViewModel} (descritto in \cref{sec:MeasureViewModel}) per interfacciarsi con i dati delle misurazioni.
+
+Inoltre, espone all'esterno due metodi e un \texttt{LiveData}: i metodi permettono di cambiare tipologia di misurazione e rigenerare la mappa attualmente visibile, mentre il \texttt{LiveData} notifica gli spostamenti di cella del dispositivo.
+
 
 \subsubsection{Generazione cella}
 Una cella della mappa rappresenta la misurazione di un'area quadrata\footnote{Esclusa la zona equatoriale, le celle appariranno rettangolari} e la dimensione di quest'ultima scala automaticamente in base al livello dello zoom.
@@ -40,7 +45,7 @@ Infine, per ogni cella è presente un'etichetta contenente il valore della misur
 \subsubsection{Generazione griglia}
 La griglia è composta da celle generate relativamente ad una posizione di riferimento. In particolare, in fase di inizializzazione viene designata come cella di riferimento quella che pone la posizione dell'utente al centro e in base a questa è possibile determinare la posizione di tutte le altre celle della mappa. 
 
-Nello specifico, date delle coordinate $(\texttt{pos}_{\texttt{lat}}, \texttt{pos}_{\texttt{lon}})$, per determinare la cella che la contiene si calcola il numero di celle da saltare rispetto a quella di riferimento: 
+Nello specifico, date le coordinate nord-ovest della cella di riferimento $(\texttt{center\_top\_left}_{\texttt{lat}}, \texttt{center\_top\_left}_{\texttt{lon}})$ e delle coordinate qualsiasi $(\texttt{pos}_{\texttt{lat}}, \texttt{pos}_{\texttt{lon}})$, per determinare la cella che la contiene si calcola il numero di celle da saltare rispetto a quella di riferimento: 
 \begin{equation*}
     \texttt{to\_skip\_tiles}_\texttt{lat} =
         \lceil \frac{\texttt{pos}_{\texttt{lat}} - \texttt{center\_top\_left}_{\texttt{lat}}}{\texttt{latitudeOffset(tile\_length\_meters)}} \rceil

@@ -71,9 +71,9 @@
 
 \subsection{Feature implementate}
 
-Di seguito sono elencate le feature implementate:
+Le feature implementate dall'applicazione sono le seguenti:
 \begin{itemize}
-    \item Mappa partizionata in aree non sovrapposte con ridimensionamento automatico delle celle in base al livello dello zoom (\cref{fig:overview_map}).
+    \item Mappa suddivisa in aree non sovrapposte con ridimensionamento automatico delle celle in base al livello dello zoom (\cref{fig:overview_map}).
     \item Range della qualità delle misurazioni calcolato automaticamente, con possibilità di scegliere il numero di classi da creare (\cref{fig:overview_ranges}).
     \item Misurazione di Wi-Fi, LTE, Bluetooth e suono con le seguenti modalità:
     \begin{itemize}[topsep=0pt]
@@ -140,8 +140,8 @@ Come pattern architetturale è stato scelto l'approccio Model-View-ViewModel, me
 
 Le operazioni asincrone sono state principalmente implementate tramite le \texttt{coroutine} e per favorire un codice più "lineare", quando possibile, sono state trasformate le funzioni con callback in funzioni \texttt{suspend} utilizzando come wrapper \texttt{suspendCoroutine}.
 
-\subsubsection{Organizzazione package}
-In \cref{table:packages} è descritta l'organizzazione dei package:
+\subsubsection{Organizzazione dei package}
+L'organizzazione dei package è la seguente:
 \begin{table}[H]
   \centering
   \begin{tabular}{ | m{8em} | m{10cm} | } 
@@ -178,7 +178,7 @@ In \cref{table:packages} è descritta l'organizzazione dei package:
 \subsection{Scansione Wi-Fi}
 A partire dall'API 26, sono state introdotte delle restrizioni\footnote{\url{https://developer.android.com/guide/topics/connectivity/wifi-scan}} al numero di richieste di scansione Wi-Fi che un'applicazione può effettuare.
 
-Per tale motivo, può capitare che una misurazione del Wi-Fi sia in grado di ottenere solo informazioni riguardanti la rete attualmente connessa.
+Per tale motivo, può capitare che una misurazione del Wi-Fi sia in grado di ottenere solo le informazioni riguardanti la rete attualmente connessa.
 
 
 \subsection{Servizi in background}
@@ -188,7 +188,7 @@ Come "soluzione", quando l'utente attiva una funzionalità che richiede un servi
 
 
 \subsection{Importazione}
-I file in cui vengono esportate le misurazioni vengono riconosciuti dall'\texttt{intent-filter} attraverso l'estensione. Ciò però non è sempre possibile qualora il file sia salvato in un'altra applicazione che salva i propri contenuti con un nome alternativo.
+I file in cui vengono esportate le misurazioni vengono riconosciuti dall'\texttt{intent-filter} attraverso l'estensione. Ciò però non è sempre possibile qualora il file risieda in un'altra applicazione che salva i propri contenuti con un nome alternativo.
 
 Per aggirare il problema, l'\texttt{intent-filter} è stato esteso per considerare un dominio più ampio di file accettati con la conseguenza che l'operazione di importazione è disponibile anche per file non inerenti all'applicazione.
 

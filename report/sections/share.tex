@@ -6,7 +6,7 @@ Le operazioni per l'esportazione e l'importazione dei dati sono implementate com
 La condivisione dei dati avviene tramite la creazione di un file contenente le misurazioni.
 Per maggiore interoperabilità con eventuali estensioni, i dati vengono salvati in formato JSON e per tale scopo viene utilizzata la libreria \texttt{Gson}.
 
-Per facilitare l'estensione delle funzionalità di condivisione, la navigazione tra i fragment dedicati alla condivisione è stato implementato utilizzando Navigation component.
+Per facilitare future espansioni delle funzionalità di condivisione, la navigazione tra i fragment dedicati alla condivisione è stato implementato utilizzando Navigation component.
 
 \subsubsection{Esportazione}
 L'esportazione è gestita dal fragment \texttt{FileExportFragment} e ViewModel \texttt{FileExportViewModel}.
@@ -22,5 +22,6 @@ L'importazione è gestita dall'activity \texttt{ImportActivity} e ViewModel \tex
 \texttt{ImportActivity} ha come \texttt{intent-filter} azioni del tipo \texttt{VIEW} e \texttt{SEND}, e quindi permette di selezionare l'azione di importazione quando l'utente apre o condivide un file.
 
 Una volta aperto e validato un file di misurazioni, l'importazione consiste nell'inserire nel database tutte le misurazioni presenti marcandole come misure ottenute per condivisione. Per evitare duplicati, l'UUID viene usato come discriminante e vengono quindi ignorate tutte le misurazioni già presenti.
+Inoltre, per evitare valori troppo sparsi, se il timestamp di una misurazione importata è molto vicino rispetto ad una misurazione locale, viene uniformato con quello della misurazione locale.
 
 Analogamente, la tabella dei BSSID viene importata escludendo le righe già note.
