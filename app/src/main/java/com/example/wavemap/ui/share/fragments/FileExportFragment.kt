@@ -32,7 +32,6 @@ class FileExportFragment : Fragment() {
     private var loading_dialog = LoadingDialog()
 
     private val permissions_check_and_save = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-        // Checks if the minimum required permissions are granted
         if (!Permissions.disk.all{ permission -> ContextCompat.checkSelfPermission(requireContext(), permission) == PackageManager.PERMISSION_GRANTED }) {
             MissingDiskPermissionsDialog().show(childFragmentManager, MissingDiskPermissionsDialog.TAG)
         }
@@ -50,7 +49,7 @@ class FileExportFragment : Fragment() {
         super.onViewCreated(view, savedInstanceState)
 
         view.findViewById<Button>(R.id.start_file_export_button).setOnClickListener {
-            // Save export in cache
+            // Saves export in cache
             loading_dialog.show(childFragmentManager, LoadingDialog.TAG)
             view_model.createExportInCache()
         }

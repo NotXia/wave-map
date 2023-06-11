@@ -57,7 +57,7 @@ class WaveHeatMapFragment : Fragment() {
 
     private var map_update_job : Job? = null
 
-    private var markers : MutableList<Marker> = mutableListOf() // Markers containing tile labels
+    private var markers : MutableList<Marker> = mutableListOf() // Markers containing labels
 
     val current_tile: MutableLiveData<Event<LatLng>> = MutableLiveData(null)
 
@@ -94,8 +94,7 @@ class WaveHeatMapFragment : Fragment() {
 
         pref_manager = PreferenceManager.getDefaultSharedPreferences(requireContext())
 
-        val mapFragment = childFragmentManager.findFragmentById(R.id.wave_map) as SupportMapFragment?
-        mapFragment?.getMapAsync { google_map ->
+       (childFragmentManager.findFragmentById(R.id.wave_map) as SupportMapFragment).getMapAsync { google_map ->
             this.google_map = google_map
 
             if (ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.ACCESS_FINE_LOCATION) == PackageManager.PERMISSION_GRANTED) {
@@ -133,7 +132,7 @@ class WaveHeatMapFragment : Fragment() {
 
         initLocationRetriever()
         val current_location : LatLng = try {
-             LocationUtils.getCurrent(requireActivity())
+            LocationUtils.getCurrent(requireActivity())
         } catch (err: Exception) {
             LatLng(0.0, 0.0)
         }
@@ -145,7 +144,7 @@ class WaveHeatMapFragment : Fragment() {
             updateTilesLength()
 
             google_map.setOnCameraMoveListener {
-                // Remove labels when the tile size changes (to prevent the text to overflow from the tile)
+                // Removes labels when the tile size changes (to prevent the text to overflow from the tile)
                 if (zoomToTileLength(google_map.cameraPosition.zoom) != tile_length_meters) {
                     markers.forEach { it.remove() }
                     markers = mutableListOf()
@@ -227,6 +226,7 @@ class WaveHeatMapFragment : Fragment() {
     }
 
     private suspend fun drawTile(top_left_corner: LatLng) {
+        // Checks if the tile is already drawn
         if (drawn_tiles.find{ abs(it.latitude-top_left_corner.latitude) < 1e-8 && abs(it.longitude-top_left_corner.longitude) < 1e-8 } != null) { return }
         if (view_model.values_scale == null) { return }
 
@@ -337,7 +337,7 @@ class WaveHeatMapFragment : Fragment() {
     private fun zoomToTileLength(zoom : Float) : Double {
         return when {
             zoom < 5 -> 1000000.0
-            zoom < 21 -> 5.0 * (2.0).pow(20.0 - round(zoom) + 1.0)
+            zoom < 21 -> 5.0 * (2.0).pow(21.0 - round(zoom))
             else -> 2.0
         }
     }

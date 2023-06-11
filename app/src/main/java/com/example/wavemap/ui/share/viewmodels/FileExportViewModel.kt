@@ -28,7 +28,7 @@ class FileExportViewModel(private val application : Application) : AndroidViewMo
     fun createExportInCache() {
         export_to_cache_job = viewModelScope.launch(Dispatchers.IO) {
             val file_name = "${System.currentTimeMillis()}.wavemap"
-            val out_dir = File(application.applicationContext.cacheDir, "/shared")
+            val out_dir = File(application.applicationContext.cacheDir, "/shared") // /shared is defined in the content provider
             export_path = File(out_dir, file_name)
 
             try {

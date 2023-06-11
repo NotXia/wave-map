@@ -1,3 +1,7 @@
+/**
+ * A type of data consumable only once
+ * */
+
 package com.example.wavemap.utilities
 
 class Event<DataType>(

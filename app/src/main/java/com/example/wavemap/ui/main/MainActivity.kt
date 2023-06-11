@@ -79,7 +79,6 @@ class MainActivity : AppCompatActivity() {
         map_fragment.changeViewModel(view_model.curr_sampler.view_model)
 
         permissions_check_and_init = registerForActivityResult(ActivityResultContracts.RequestMultiplePermissions()) {
-            // Checks if the minimum required permissions are granted
             if (!Permissions.minimumRequired.all{ permission -> ContextCompat.checkSelfPermission(baseContext, permission) == PackageManager.PERMISSION_GRANTED }) {
                 MissingMinimumPermissionsDialog().show(supportFragmentManager, MissingMinimumPermissionsDialog.TAG)
             }
@@ -123,6 +122,7 @@ class MainActivity : AppCompatActivity() {
 
         try {
             view_model.stopPeriodicScan()
+            // Dialogs dismiss
             if (supportFragmentManager.findFragmentByTag(MeasureFilterDialog.TAG) != null) {
                 (supportFragmentManager.findFragmentByTag(MeasureFilterDialog.TAG) as MeasureFilterDialog).dismiss()
             }
@@ -231,6 +231,7 @@ class MainActivity : AppCompatActivity() {
             val sampler = view_model.curr_sampler
             if (sampler.view_model !is QueryableMeasureViewModel) { return@setOnClickListener }
 
+            // Opens a dialog with the possible queries
             lifecycleScope.launch(Dispatchers.IO) {
                 val queries = view_model.getSamplerQueries(sampler)
                 val items : ArrayList<CharSequence> = queries.map{ it.first }.toCollection(ArrayList())
