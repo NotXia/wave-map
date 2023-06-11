@@ -245,7 +245,9 @@ class MainActivity : AppCompatActivity() {
 
     private fun initTileChangeListener() {
         map_fragment.current_tile.observe(this) {
-            view_model.tileChangeMeasure()
+            if (it?.get() != null) {
+                view_model.tileChangeMeasure()
+            }
         }
     }
 

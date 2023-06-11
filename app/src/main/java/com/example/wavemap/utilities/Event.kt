@@ -14,4 +14,8 @@ class Event<DataType>(
             }
         }
     }
+
+    fun peek() : DataType? {
+        return data
+    }
 }

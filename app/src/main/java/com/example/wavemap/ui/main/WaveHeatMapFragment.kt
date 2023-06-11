@@ -23,6 +23,7 @@ import androidx.preference.PreferenceManager
 import com.example.wavemap.R
 import com.example.wavemap.ui.main.viewmodels.MeasureViewModel
 import com.example.wavemap.utilities.Constants
+import com.example.wavemap.utilities.Event
 import com.example.wavemap.utilities.LocationUtils
 import com.example.wavemap.utilities.LocationUtils.Companion.metersToLatitudeOffset
 import com.example.wavemap.utilities.LocationUtils.Companion.metersToLongitudeOffset
@@ -34,8 +35,6 @@ import com.google.android.gms.maps.GoogleMap
 import com.google.android.gms.maps.SupportMapFragment
 import com.google.android.gms.maps.model.*
 import kotlinx.coroutines.*
-import kotlinx.coroutines.sync.Mutex
-import kotlinx.coroutines.sync.withLock
 import kotlin.coroutines.resume
 import kotlin.coroutines.resumeWithException
 import kotlin.coroutines.suspendCoroutine
@@ -60,9 +59,7 @@ class WaveHeatMapFragment : Fragment() {
 
     private var markers : MutableList<Marker> = mutableListOf() // Markers containing tile labels
 
-    val current_tile: MutableLiveData<LatLng> by lazy {
-        MutableLiveData<LatLng>()
-    }
+    val current_tile: MutableLiveData<Event<LatLng>> = MutableLiveData(null)
 
     private val BUNDLE_CAMERA_LAT = "camera-lat"
     private val BUNDLE_CAMERA_LON = "camera-lon"
@@ -186,8 +183,8 @@ class WaveHeatMapFragment : Fragment() {
 
                     val location = locationResult.lastLocation as Location
                     val tile = getReferenceTileContaining(LatLng(location.latitude, location.longitude))
-                    if (current_tile.value != tile) {
-                        current_tile.value = tile
+                    if (current_tile.value?.peek() != tile) {
+                        current_tile.postValue(Event(tile))
                     }
                 }
             }
