@@ -82,7 +82,11 @@ class FileExportFragment : Fragment() {
             }
 
             if (download_success) {
-                ExportDownloadNotification.send(requireContext(), 1)
+                try {
+                    ExportDownloadNotification.send(requireContext(), 1)
+                } catch (err: Exception) {
+                    Toast.makeText(requireContext(), getString(R.string.saved_in_downloads), Toast.LENGTH_SHORT).show()
+                }
             } else {
                 Toast.makeText(requireContext(), getString(R.string.error_occurred), Toast.LENGTH_SHORT).show()
             }

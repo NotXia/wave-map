@@ -122,4 +122,6 @@
 
     <string name="invalid_format">Formato invalido</string>
 
+    <string name="saved_in_downloads">Salvato con successo in Download</string>
+
 </resources>
