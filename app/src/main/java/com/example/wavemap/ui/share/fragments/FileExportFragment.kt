@@ -1,7 +1,5 @@
 package com.example.wavemap.ui.share.fragments
 
-import android.Manifest
-import android.app.*
 import android.content.ClipData
 import android.content.Intent
 import android.content.pm.PackageManager
@@ -13,10 +11,7 @@ import android.view.ViewGroup
 import android.widget.Button
 import android.widget.Toast
 import androidx.activity.result.contract.ActivityResultContracts
-import androidx.core.app.NotificationCompat
-import androidx.core.app.NotificationManagerCompat
 import androidx.core.content.ContextCompat
-import androidx.core.content.ContextCompat.getSystemService
 import androidx.core.content.FileProvider
 import androidx.fragment.app.Fragment
 import androidx.fragment.app.viewModels
@@ -24,6 +19,7 @@ import com.example.wavemap.R
 import com.example.wavemap.dialogs.LoadingDialog
 import com.example.wavemap.dialogs.ShareExportDialog
 import com.example.wavemap.dialogs.settings.MissingDiskPermissionsDialog
+import com.example.wavemap.notifications.ExportDownloadNotification
 import com.example.wavemap.ui.share.viewmodels.FileExportViewModel
 import com.example.wavemap.utilities.Permissions
 import java.io.*
@@ -87,7 +83,7 @@ class FileExportFragment : Fragment() {
             }
 
             if (download_success) {
-                sendDownloadNotification()
+                ExportDownloadNotification.send(requireContext(), 1)
             } else {
                 Toast.makeText(requireContext(), getString(R.string.error_occurred), Toast.LENGTH_SHORT).show()
             }
@@ -117,29 +113,4 @@ class FileExportFragment : Fragment() {
         startActivity(Intent.createChooser(share_intent, getString(R.string.wave_map_export)))
     }
 
-    private fun sendDownloadNotification() {
-        if ( ContextCompat.checkSelfPermission(requireContext(), Manifest.permission.POST_NOTIFICATIONS) != PackageManager.PERMISSION_GRANTED) {
-            return
-        }
-
-        lateinit var notification_builder : NotificationCompat.Builder
-        val channel_id = "ch_download_export"
-        val channel_name: CharSequence = getString(R.string.export_download)
-        val channel_desc = getString(R.string.export_download_desc)
-        val channel = NotificationChannel(channel_id, channel_name, NotificationManager.IMPORTANCE_DEFAULT)
-        channel.description = channel_desc
-        val notificationManager = getSystemService(requireContext(), NotificationManager::class.java) ?: return
-        notificationManager.createNotificationChannel(channel)
-        notification_builder = NotificationCompat.Builder(requireContext(), channel_id)
-
-        notification_builder.setContentTitle(getString(R.string.export_download)).setContentText(getString(R.string.export_download_text))
-            .setSmallIcon(R.mipmap.ic_launcher_round)
-            .setPriority(NotificationCompat.PRIORITY_DEFAULT)
-            .setAutoCancel(true)
-            .setContentIntent(TaskStackBuilder.create(requireContext()).run {
-                addNextIntentWithParentStack(Intent(DownloadManager.ACTION_VIEW_DOWNLOADS))
-                getPendingIntent(0, PendingIntent.FLAG_UPDATE_CURRENT or PendingIntent.FLAG_IMMUTABLE)
-            })
-        NotificationManagerCompat.from(requireContext()).notify(1, notification_builder.build())
-    }
 }
