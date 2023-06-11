@@ -37,7 +37,7 @@ class BluetoothSampler(
 
     // Measures with a complete scan and by checking paired devices
     override suspend fun sample() : List<WaveMeasure> {
-        if ( !Permissions.check(context, Permissions.noise) ) { throw SecurityException("Missing noise permissions") }
+        if ( !Permissions.check(context, Permissions.bluetooth) ) { throw SecurityException("Missing bluetooth permissions") }
 
         val timestamp = System.currentTimeMillis()
         return sampleWithDiscovery(timestamp) + sampleConnected(timestamp)

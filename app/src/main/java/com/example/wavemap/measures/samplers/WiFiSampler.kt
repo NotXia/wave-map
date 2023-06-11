@@ -80,22 +80,34 @@ class WiFiSampler(
             val request = NetworkRequest.Builder().addTransportType(NetworkCapabilities.TRANSPORT_WIFI).build()
             val connectivity_manager : ConnectivityManager = context.getSystemService(Context.CONNECTIVITY_SERVICE) as ConnectivityManager
             val timeout_handler = Handler(Looper.getMainLooper())
-            val callback = object : ConnectivityManager.NetworkCallback() {
-                override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
-                    timeout_handler.removeCallbacksAndMessages(null)
-                    connectivity_manager.unregisterNetworkCallback(this)
+            fun handleCapabilitiesChanges(network: Network, networkCapabilities: NetworkCapabilities) {
+                GlobalScope.launch {
+                    val wifi_info = networkCapabilities.transportInfo as WifiInfo?
+                        ?: return@launch cont.resume( null )
+                    val current_location: LatLng = LocationUtils.getCurrent(context)
 
-                    GlobalScope.launch {
-                        val wifi_info = networkCapabilities.transportInfo as WifiInfo?
-                            ?: return@launch cont.resume( null )
-                        val current_location: LatLng = LocationUtils.getCurrent(context)
-
-                        db.bssidDAO().insert( BSSIDTable(wifi_info.bssid, createWiFiName(wifi_info.ssid, wifi_info.bssid, wifi_info.frequency), BSSIDType.WIFI) )
-                        try {
-                            cont.resume(
-                                MeasureTable(MeasureType.WIFI, wifi_info.rssi.toDouble(), timestamp, current_location.latitude, current_location.longitude, wifi_info.bssid)
-                            )
-                        } catch (err : Exception) { /* Just in case */ }
+                    db.bssidDAO().insert( BSSIDTable(wifi_info.bssid, createWiFiName(wifi_info.ssid, wifi_info.bssid, wifi_info.frequency), BSSIDType.WIFI) )
+                    try {
+                        cont.resume(
+                            MeasureTable(MeasureType.WIFI, wifi_info.rssi.toDouble(), timestamp, current_location.latitude, current_location.longitude, wifi_info.bssid)
+                        )
+                    } catch (err : Exception) { /* Just in case */ }
+                }
+            }
+            val callback = if (Build.VERSION.SDK_INT >= Build.VERSION_CODES.S) {
+                object : ConnectivityManager.NetworkCallback(FLAG_INCLUDE_LOCATION_INFO) {
+                    override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
+                        timeout_handler.removeCallbacksAndMessages(null)
+                        connectivity_manager.unregisterNetworkCallback(this)
+                        handleCapabilitiesChanges(network, networkCapabilities)
+                    }
+                }
+            } else {
+                object : ConnectivityManager.NetworkCallback() {
+                    override fun onCapabilitiesChanged(network: Network, networkCapabilities: NetworkCapabilities) {
+                        timeout_handler.removeCallbacksAndMessages(null)
+                        connectivity_manager.unregisterNetworkCallback(this)
+                        handleCapabilitiesChanges(network, networkCapabilities)
                     }
                 }
             }
