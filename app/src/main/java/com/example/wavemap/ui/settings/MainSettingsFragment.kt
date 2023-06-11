@@ -24,7 +24,6 @@ class MainSettingsFragment : PreferenceFragmentCompat() {
         setPreferencesFromResource(R.xml.main_preferences, rootKey)
 
         val periodic_scan_interval = preferenceManager.findPreference<EditTextPreference>("periodic_scan_interval")
-        periodic_scan_interval?.setOnBindEditTextListener { edit_text -> edit_text.inputType = InputType.TYPE_CLASS_NUMBER }
         periodic_scan_interval?.summaryProvider = Preference.SummaryProvider<EditTextPreference> { preference -> "${ preference.text }s" }
 
 

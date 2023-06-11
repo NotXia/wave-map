@@ -42,7 +42,7 @@
             android:key="periodic_scan"
             android:summary="@string/periodic_measure_desc"
             android:title="@string/periodic_measure" />
-        <EditTextPreference
+        <com.example.wavemap.ui.settings.edittexts.EditUnsignedIntPreference
             android:defaultValue="60"
             android:key="periodic_scan_interval"
             android:selectAllOnFocus="true"

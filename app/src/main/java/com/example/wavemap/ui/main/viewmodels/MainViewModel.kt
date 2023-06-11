@@ -108,7 +108,7 @@ class MainViewModel(private val application : Application) : AndroidViewModel(ap
 
     fun startPeriodicScan() {
         if (pref_manager.getBoolean("periodic_scan", false)) {
-            val delay = pref_manager.getString("periodic_scan_interval", "60")!!.toLong()
+            val delay = pref_manager.getInt("periodic_scan_interval", 60).toLong()
             if (periodic_scan_handler != null) { return }
 
             periodic_scan_handler = Handler(Looper.getMainLooper())

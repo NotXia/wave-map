@@ -55,11 +55,11 @@ abstract class MeasureViewModel(application : Application) : AndroidViewModel(ap
         val preferences = PreferenceManager.getDefaultSharedPreferences(getApplication())
 
         values_scale = Pair(
-            preferences.getString("${preferences_prefix}_range_bad", "${default_scale.first}")!!.toDouble(),
-            preferences.getString("${preferences_prefix}_range_good", "${default_scale.second}")!!.toDouble()
+            preferences.getFloat("${preferences_prefix}_range_bad", default_scale.first.toFloat()).toDouble(),
+            preferences.getFloat("${preferences_prefix}_range_good", default_scale.second.toFloat()).toDouble()
         )
-        limit = preferences.getString("${preferences_prefix}_past_limit", "1")!!.toInt()
-        color_range_size = preferences.getString("${preferences_prefix}_range_size", "${Constants.RANGE_SIZE_DEFAULT}")!!.toInt()
+        limit = preferences.getInt("${preferences_prefix}_past_limit", 1)
+        color_range_size = preferences.getInt("${preferences_prefix}_range_size", Constants.RANGE_SIZE_DEFAULT)
         get_shared = preferences.getBoolean("use_shared", true)
     }
 }
