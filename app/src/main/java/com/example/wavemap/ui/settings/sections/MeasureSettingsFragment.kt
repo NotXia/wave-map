@@ -32,8 +32,8 @@ open class MeasureSettingsFragment(
 
         if (!pref_manager.contains("${key}_range_bad"))     { editor.putFloat("${key}_range_bad", range_bad_default.toFloat()) }
         if (!pref_manager.contains("${key}_range_good"))    { editor.putFloat("${key}_range_good", range_good_default.toFloat()) }
-        if (!pref_manager.contains("${key}_past_limit"))     { editor.putInt("${key}_past_limit", past_limit_default) }
-        if (!pref_manager.contains("${key}_range_size"))     { editor.putInt("${key}_range_size", range_size_default) }
+        if (!pref_manager.contains("${key}_past_limit"))    { editor.putInt("${key}_past_limit", past_limit_default) }
+        if (!pref_manager.contains("${key}_range_size"))    { editor.putInt("${key}_range_size", range_size_default) }
         editor.commit()
 
         // Creating settings elements
@@ -66,7 +66,7 @@ open class MeasureSettingsFragment(
         pref_range_size.key = "${key}_range_size"
         pref_range_size.title = getString(R.string.range_size)
         pref_range_size.dialogTitle = "${getString(R.string.range_size)} (1 - ${Constants.HUE_MEASURE_RANGE.second.toInt()})"
-        pref_range_size.summaryProvider = Preference.SummaryProvider<EditTextPreference> { preference -> "${ preference.text ?: range_size_default }" }
+        pref_range_size.summaryProvider = Preference.SummaryProvider<EditTextPreference> { preference -> "${getString(R.string.range_size_desc)}: ${ preference.text ?: range_size_default }" }
         pref_range_size.setOnPreferenceChangeListener { _, new_value ->
             val new_range_size = (new_value as String).toInt()
             return@setOnPreferenceChangeListener 1 <= new_range_size && new_range_size <= Constants.HUE_MEASURE_RANGE.second.toInt()

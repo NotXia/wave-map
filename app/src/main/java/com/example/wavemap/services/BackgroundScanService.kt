@@ -33,8 +33,8 @@ import com.google.android.gms.maps.model.LatLng
 class BackgroundScanService : Service() {
 
     companion object {
-        private const val EXTRA_BACKGROUND_SCAN = "background_scan"
-        private const val EXTRA_UNCOVERED_AREA = "uncovered_area"
+        private const val EXTRA_BACKGROUND_SCAN = "wavemap.background_scan"
+        private const val EXTRA_UNCOVERED_AREA = "wavemap.uncovered_area"
 
         fun start(activity: Activity) {
             if (!Permissions.check(activity.applicationContext, Permissions.background_gps) || !needToStartService(activity.applicationContext)) {

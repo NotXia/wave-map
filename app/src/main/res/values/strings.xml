@@ -32,16 +32,17 @@
     <string name="range_good">Measure best value</string>
     <string name="past_limit">Past measures to consider</string>
     <string name="range_size">Number of ranges</string>
+    <string name="range_size_desc">Number of possible colors that can appear on the map</string>
 
-    <string name="periodic_measure">Enable periodic scans</string>
+    <string name="periodic_measure">Periodic scans</string>
     <string name="periodic_measure_desc">Periodically scan when the application is active</string>
     <string name="periodic_measure_interval">Scan time interval (in seconds)</string>
-    <string name="measure_on_tile_change">Enable auto tile scan</string>
+    <string name="measure_on_tile_change">Scan while moving</string>
     <string name="measure_on_tile_change_desc">Automatically scan when moving between tiles</string>
-    <string name="background_measure">Enable background scans</string>
+    <string name="background_measure">Background scans</string>
     <string name="background_measure_desc">Periodically scan when the application is closed</string>
     <string name="notify_uncovered_area">Uncovered area notification</string>
-    <string name="notify_uncovered_area_desc">Send a notification when entering an uncovered area</string>
+    <string name="notify_uncovered_area_desc">Send a notification when entering an area without recent measurements</string>
     <string name="tile_label">Tile value</string>
     <string name="tile_label_desc">Show the value of tiles</string>
 
