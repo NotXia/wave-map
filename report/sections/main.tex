@@ -1,5 +1,4 @@
 \subsection{App principale}
-% Il punto di entrata del programma è l'activity \texttt{MainActivity} che contiene la mappa e i comandi per effettuare le misurazioni.
 
 \subsubsection{ViewModel dei \textit{sampler}} \label{sec:MeasureViewModel}
 Per ciascun \textit{sampler} è stato definito un ViewModel dedicato contenente le operazioni e le informazioni per ciascun tipo di misurazione.
@@ -7,7 +6,7 @@ In particolare, è stata definita una gerarchia di ViewModel come rappresentato 
 
 \begin{figure}[H]
   \centering
-  \includegraphics[width=\textwidth]{./img/viewmodel.pdf}
+  \includegraphics[width=0.85\textwidth]{./img/viewmodel.pdf}
   \caption{Gerarchia dei ViewModel} \label{fig:viewmodel_hierarchy}
 \end{figure}
 
@@ -17,7 +16,7 @@ La classe astratta \texttt{MeasureViewModel} fornisce tutte le informazioni util
 Vengono inoltre esposti i metodi per effettuare una nuova misurazione, ottenere la media delle misurazioni di una casella e caricare le impostazioni specifiche per il tipo di misura.
 Da \texttt{MeasureViewModel} sono implementati \texttt{LTEViewModel} e \texttt{NoiseViewModel}.
 
-\texttt{MeasureViewModel} viene poi estesa in un'ulteriore classe astratta \texttt{QuearyableMeasureViewModel} per rappresentare un tipo di misura a cui è possibile sottoporre un filtro di ricerca. È infatti richiesta l'implementazione di un metodo per elencare le possibili opzioni di ricerca e per cambiare la ricerca. Da questo tipo di ViewModel sono implementati \texttt{WiFiViewModel} e \texttt{BluetoothViewModel}, in entrambi i casi la ricerca si basa sul BSSID.
+\texttt{MeasureViewModel} viene poi estesa in un'ulteriore classe astratta \texttt{QueryableMeasureViewModel} per rappresentare un tipo di misura a cui è possibile sottoporre un filtro di ricerca. È infatti richiesta l'implementazione di un metodo per elencare le possibili opzioni di ricerca e per cambiare la ricerca. Da questo tipo di ViewModel sono implementati \texttt{WiFiViewModel} e \texttt{BluetoothViewModel}, in entrambi i casi la ricerca si basa sul BSSID.
 
 
 \subsubsection{MainViewModel}
