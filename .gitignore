@@ -22,3 +22,7 @@ report/*.log
 report/*.out
 report/*.synctex.gz
 report/*.toc
+report/*.snm
+report/*.run.xml
+report/*.nav
+report/*.bbl
