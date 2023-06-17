@@ -10,26 +10,30 @@
 
 \begin{document}
 
-
 \title{Wave Map}
-\author{Tian Cheng Xia\\{\footnotesize Matricola: \texttt{975129}}}
+\subtitle{Cellular Connectivity and Noise Map}
+\author{Tian Cheng Xia\\Matricola: \texttt{975129}}
 \institute{Corso di Laboratorio di applicazioni mobili\\Alma Mater Studiorum -- Università di Bologna}
 \date{A.A. 2022 -- 2023}
-
+\setbeamerfont{title}{size=\huge}
+\setbeamerfont{author}{size=\small}
+\setbeamerfont{institute}{size=\small}
+\setbeamerfont{date}{size=\small}
 
 \begin{frame}
-    \titlepage
+    \maketitle
 \end{frame}
 
 
 \begin{frame}
-    \frametitle{Informazioni generali}
+    \frametitle{Informazioni introduttive}
 
     \begin{itemize}
-        \item Kotlin
-        \item \texttt{Room} per interfacciarsi con il database locale
-        \item \texttt{Coroutine} per le operazioni asincrone
-        \item Linearizzazione delle funzioni con callback attraverso \texttt{suspendCoroutine}
+        \item Android nativo con Kotlin.
+        \item \texttt{Room} per interfacciarsi con il database locale.
+        \item \texttt{Coroutine} per le operazioni asincrone.
+        \item Conversione dei callback in funzioni \texttt{suspend} attraverso \texttt{suspendCoroutine}.
+        \item Gestione di lingua e temi.
     \end{itemize}
 \end{frame}
 
@@ -39,12 +43,47 @@
 
     La classe astratta \texttt{WaveSampler} rappresenta un misuratore e richiede l'implementazione dei metodi:
     \begin{itemize}
-        \item \texttt{sample}: prende una nuova misurazione
-        \item \texttt{store}: salva una misurazione
-        \item \texttt{retrieve}: ricerca misurazioni
+        \item \texttt{sample}: prende una nuova misurazione.
+        \item \texttt{store}: salva una misurazione.
+        \item \texttt{retrieve}: ricerca misurazioni.
     \end{itemize}
 
     \includegraphics[width=\linewidth]{./img/sampler.pdf}
+\end{frame}
+
+
+\begin{frame}
+    \frametitle{Raccolta dati}
+
+    \begin{block}{\texttt{WiFiSampler}}
+        \begin{itemize}
+            \item Ottiene la potenza della rete attualmente connessa attraverso il \texttt{ConnectivityManager} (o \texttt{WifiManager}).
+            \item Misura le reti circostanti con un \texttt{BroadcastReceiver} con filtro \texttt{WifiManager.SCAN\_RESULTS\_AVAILABLE\_ACTION} e il \texttt{WifiManager}.
+        \end{itemize}
+    \end{block}
+
+    \begin{block}{\texttt{LTESampler}}
+        \begin{itemize}
+            \item Ottiene la potenza attraverso il \texttt{TelephonyManager}.
+        \end{itemize}
+    \end{block}
+\end{frame}
+
+\begin{frame}
+    \frametitle{Raccolta dati}
+
+    \begin{block}{\texttt{BluetoothSampler}}
+        \begin{itemize}
+            \item Misura la potenza dei dispositivi accoppiati attraverso il \texttt{BluetoothManager}.
+            \item Misura i dispositivi circostanti con un \texttt{BroadcastReceiver} con filtro \texttt{BluetoothDevice.ACTION\_FOUND} e il \texttt{BluetoothManager}.
+        \end{itemize}
+    \end{block}
+
+    \begin{block}{\texttt{NoiseSampler}}
+        \begin{itemize}
+            \item Calcola la media di una serie di misurazioni effettuate con un \texttt{MediaRecorder}.
+        \end{itemize}
+    \end{block}
 \end{frame}
 
 
@@ -94,10 +133,10 @@
 
     Il ViewModel principale è \texttt{MainViewModel}.
     \begin{itemize}
-        \item Contiene un'istanza di ciascun ViewModel dei misuratori
-        \item Gestisce il misuratore attualmente attivo
-        \item Garantisce mutua esclusione per ciascun misuratore
-        \item \texttt{LiveData} per notificare la view dei cambiamenti
+        \item Contiene un'istanza di ciascun ViewModel dei misuratori.
+        \item Gestisce il misuratore attualmente attivo.
+        \item Garantisce mutua esclusione per ciascun misuratore.
+        \item \texttt{LiveData} per notificare la view dei cambiamenti.
     \end{itemize}
     
 
@@ -124,8 +163,8 @@
     \frametitle{Servizio in background}
 
     \begin{itemize}
-        \item Scansioni durante il movimento
-        \item Notifica di aree prive di misurazioni recenti
+        \item Scansioni durante il movimento.
+        \item Notifica di aree prive di misurazioni recenti.
     \end{itemize}
 
     Il servizio viene avviato come \textit{Foreground Service} se è necessario effettuare scansioni.
@@ -143,7 +182,7 @@
 
     Esportazione su file in formato JSON.
 
-    Importazione attraverso \texttt{intent-filter}.
+    Importazione unificando le misurazioni temporalmente vicine.
 
     \begin{figure}[H]
         \centering
@@ -166,9 +205,9 @@
     \frametitle{Problemi noti}
 
     \begin{itemize}
-        \item Dall'API 26 sono state introdotte restrizioni al numero di scansioni Wi-Fi che un'applicazione può fare
-        \item Alcuni produttori hanno politiche di ottimizzazione della batteria che tendono a limitare i servizi in background
-        \item L'\texttt{intent-filter} per l'importazione ammette input che non necessariamente riguardano l'app
+        \item Dall'API 26 sono state introdotte restrizioni al numero di scansioni Wi-Fi che un'applicazione può fare.
+        \item Alcuni produttori hanno politiche di ottimizzazione della batteria che tendono a limitare i servizi in background.
+        \item L'\texttt{intent-filter} per l'importazione ammette input che non necessariamente riguardano l'app.
     \end{itemize}
 \end{frame}
 
